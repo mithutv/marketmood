@@ -17,17 +17,27 @@ st.markdown("---")
 st.sidebar.header("Asset Selection")
 ticker_input = st.sidebar.text_input("Enter Stock Ticker (e.g., NVDA, AAPL, MSFT)", value="NVDA").upper()
 
+# --- OPTIMIZATION ENGINE: CACHED DATA FETCHING CORNERSTONES ---
+
+@st.cache_data(ttl=3600)  # Caches stock historical dataframe for 1 hour
+def fetch_historical_data(ticker):
+    stock = yf.Ticker(ticker)
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=1461)  # 4 years
+    df = stock.history(start=start_date, end=end_date)
+    company_name = stock.info.get('longName', ticker)
+    return df, company_name
+
+@st.cache_data(ttl=1800)  # Caches news streams separately for 30 minutes
+def fetch_stock_news(ticker):
+    stock = yf.Ticker(ticker)
+    return stock.news
+
 # 3. Main App Logic
 if ticker_input:
     try:
-        # Fetching historical daily data
-        stock = yf.Ticker(ticker_input)
-        company_name = stock.info.get('longName', ticker_input)
-        
-        # Extended window to 4 years 
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=1461) 
-        df = stock.history(start=start_date, end=end_date)
+        # Pull data safely from the local Streamlit cache instead of hammering Yahoo
+        df, company_name = fetch_historical_data(ticker_input)
         
         if not df.empty:
             
@@ -92,7 +102,7 @@ if ticker_input:
             st.markdown("---")
             
             # --- LIVE NEWS & SENTIMENT VERDICT ENGINE ---
-            news_list = stock.news
+            news_list = fetch_stock_news(ticker_input)
             if news_list:
                 headlines_to_show = news_list[:5]
                 total_polarity = 0
@@ -106,7 +116,7 @@ if ticker_input:
                     sentiment_tag = "🟢 Positive" if polarity > 0.05 else ("🔴 Negative" if polarity < -0.05 else "⚪ Neutral")
                     scored_headlines.append({"title": title, "publisher": item.get('publisher', 'News'), "link": item.get('link', '#'), "tag": sentiment_tag})
                 
-                avg_polarity = total_polarity / len(headlines_to_show)
+                avg_polarity = total_polarity / len(headlines_to_show) if headlines_to_show else 0
                 
                 if avg_polarity > 0.05:
                     aggregated_verdict = "😊 POSITIVE SENTIMENT (BULLISH)"
