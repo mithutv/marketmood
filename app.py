@@ -24,7 +24,7 @@ def fetch_historical_data(ticker):
     stock = yf.Ticker(ticker)
     end_date = datetime.now()
     start_date = end_date - timedelta(days=1461)  # 4 years
-    df = stock.history(start=start_date, end=end_date)
+    df = stock.history(period="1y")
     company_name = stock.info.get('longName', ticker)
     return df, company_name
 
