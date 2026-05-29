@@ -25,7 +25,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("⚡ MarketMood AI — Quantitative Analytics Engine")
+st.title("⚡ MarketMood AI — Quant Engine")
 st.markdown("Dynamic macro trend forecasting, risk-adjusted metrics, and multi-factor news sentiment analysis.")
 st.markdown("---")
 
