@@ -9,6 +9,22 @@ from textblob import TextBlob
 # 1. Page Configuration
 st.set_page_config(page_title="MarketMood AI Alpha", page_icon="⚡", layout="wide")
 
+# --- INJECT PREMIUM UI STYLING ---
+st.markdown("""
+    <style>
+        /* Customize the look of container cards */
+        .stElementContainer div[data-testid="stVerticalBlockBorderWrapper"] {
+            border-color: #2b303c !important;
+            background-color: #131722;
+        }
+        /* Make subheaders crisp and clean */
+        h2, h3 {
+            letter-spacing: -0.5px;
+            font-weight: 600 !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("⚡ MarketMood AI — Quantitative Analytics Engine")
 st.markdown("Dynamic macro trend forecasting, risk-adjusted metrics, and multi-factor news sentiment analysis.")
 st.markdown("---")
