@@ -95,43 +95,77 @@ if ticker_input:
             st.markdown("---")
             
             # --- 1-YEAR FORECAST ENGINE ---
-           # --- 1-YEAR FORECAST ENGINE ---
-           # --- 1-YEAR FORECAST ENGINE ---
-            st.subheader("🔮 1-Year Volatility Funnel Projections")
-            st.markdown("Calculated via risk-adjusted drift and square-root-of-time volatility scaling.")
+         # --- 1-YEAR FORECAST ENGINE (MONTE CARLO GBM) ---
+            st.subheader("🔮 1-Year Monte Carlo Probability Projections")
+            st.markdown("Simulating 100 random asset trajectories using Geometric Brownian Motion (GBM) stochastic calculus.")
             
-            future_dates = [df.index[-1] + timedelta(days=int(i)) for i in range(1, 366)]
-            std_dev = df['Daily_Return'].std()
-            avg_return = df['Daily_Return'].mean()
-            days_future = np.arange(1, 366)
+            # 1. Setup Simulation Parameters
+            days_future = 365
+            num_simulations = 100
+            future_dates = [df.index[-1] + timedelta(days=int(i)) for i in range(1, days_future + 1)]
             
-            # 1. Base Case: Standard expected log-drift over time
-            base_pred = latest_price * (1 + avg_return) ** days_future
+            std_dev = float(df['Daily_Return'].std())
+            avg_return = float(df['Daily_Return'].mean())
             
-            # 2. Volatility Funnel: Scale standard deviation by the square root of future days
-            volatility_buffer = 1.5 * std_dev * np.sqrt(days_future)
+            # Calculate Risk-Adjusted Drift for GBM: (μ - 0.5 * σ^2)
+            drift = avg_return - (0.5 * (std_dev ** 2))
             
-            bull_pred = base_pred * (1 + volatility_buffer)
-            bear_pred = base_pred * (1 - volatility_buffer)
+            # Create a matrix to hold simulation paths: shape (365, 100)
+            simulation_matrix = np.zeros((days_future, num_simulations))
             
-            # Force the bear case to clip at $0.00 if extreme volatility drops it below zero
-            bear_pred = np.clip(bear_pred, 0, None)
+            # Generate random shocks for all days and all simulations simultaneously
+            # np.random.normal represents the random "shock" variable Z
+            random_shocks = np.random.normal(0, 1, (days_future, num_simulations))
             
+            # 2. Compute the Stochastic Paths
+            for sim in range(num_simulations):
+                current_price = latest_price
+                for day in range(days_future):
+                    # GBM Formula: S_t = S_{t-1} * exp(drift + std_dev * Z)
+                    exponent = drift + (std_dev * random_shocks[day, sim])
+                    current_price = current_price * np.exp(exponent)
+                    simulation_matrix[day, sim] = current_price
+            
+            # 3. Extract Distribution Targets at Terminal Day (Day 365)
+            terminal_prices = simulation_matrix[-1, :]
+            
+            # Base Case = Median path (50th percentile)
+            terminal_base = float(np.percentile(terminal_prices, 50))
+            # Bull Case = Top tier outcome (85th percentile)
+            terminal_bull = float(np.percentile(terminal_prices, 85))
+            # Bear Case = Downside tier outcome (15th percentile)
+            terminal_bear = float(np.percentile(terminal_prices, 15))
+            
+            # 4. Render the Interactive Plotly Chart
             fig_pred = go.Figure()
-            fig_pred.add_trace(go.Scatter(x=future_dates, y=bull_pred, mode='lines', name='🟢 Target Upper Bound (Bull)', line=dict(dash='dash', color='#2ecc71')))
-            fig_pred.add_trace(go.Scatter(x=future_dates, y=base_pred, mode='lines', name='🔵 Central Tendency (Base)', line=dict(color='#3498db', width=2)))
-            fig_pred.add_trace(go.Scatter(x=future_dates, y=bear_pred, mode='lines', name='🔴 Target Lower Bound (Bear)', line=dict(dash='dash', color='#e74c3c')))
             
-            fig_pred.update_layout(template='plotly_dark', xaxis_title="Future Date", yaxis_title="Projected Price (USD)", margin=dict(l=20, r=20, t=20, b=20), height=300)
+            # Plot each individual random walk line as a semi-transparent background strand
+            for sim in range(num_simulations):
+                fig_pred.add_trace(go.Scatter(
+                    x=future_dates, 
+                    y=simulation_matrix[:, sim], 
+                    mode='lines', 
+                    line=dict(color='rgba(100, 149, 237, 0.15)', width=1),
+                    showlegend=False
+                ))
+            
+            # Highlight the Statistical Aggregates over the top
+            fig_pred.add_trace(go.Scatter(x=future_dates, y=np.percentile(simulation_matrix, 85, axis=1), mode='lines', name='🟢 Bull Bound (85th Pctl)', line=dict(color='#2ecc71', width=2, dash='dash')))
+            fig_pred.add_trace(go.Scatter(x=future_dates, y=np.percentile(simulation_matrix, 50, axis=1), mode='lines', name='🔵 Median Path (Expected)', line=dict(color='#3498db', width=3)))
+            fig_pred.add_trace(go.Scatter(x=future_dates, y=np.percentile(simulation_matrix, 15, axis=1), mode='lines', name='🔴 Bear Bound (15th Pctl)', line=dict(color='#e74c3c', width=2, dash='dash')))
+            
+            fig_pred.update_layout(
+                template='plotly_dark', 
+                xaxis_title="Future Horizon", 
+                yaxis_title="Simulated Price (USD)", 
+                margin=dict(l=20, r=20, t=20, b=20), 
+                height=350,
+                showlegend=True
+            )
             st.plotly_chart(fig_pred, use_container_width=True)
             
             # --- PREDICTIVE METRICS MATRIX ---
-            st.markdown("#### 🎯 12-Month Quant Target Outlook")
-            
-            # Extract the corrected 1-year target terminal values
-            terminal_base = float(base_pred[-1])
-            terminal_bull = float(bull_pred[-1])
-            terminal_bear = float(bear_pred[-1])
+            st.markdown("#### 🎯 12-Month Monte Carlo Target Distribution")
             
             # Calculate implied returns from the current market price
             base_return = ((terminal_base - latest_price) / latest_price) * 100
@@ -140,14 +174,14 @@ if ticker_input:
             
             # Display target cards using Streamlit columns
             p1, p2, p3 = st.columns(3)
-            p1.metric("Bear Case Target (1.5σ)", f"${terminal_bear:.2f}", f"{bear_return:.2f}% Downside", delta_color="inverse")
-            p2.metric("Base Case Target (Expected)", f"${terminal_base:.2f}", f"+{base_return:.2f}% Upside")
-            p3.metric("Bull Case Target (1.5σ)", f"${terminal_bull:.2f}", f"+{bull_return:.2f}% Upside")
+            p1.metric("Bear Distribution (15%)", f"${terminal_bear:.2f}", f"{bear_return:.2f}% Downside", delta_color="inverse")
+            p2.metric("Median Expectation (50%)", f"${terminal_base:.2f}", f"+{base_return:.2f}% Expected")
+            p3.metric("Bull Distribution (85%)", f"${terminal_bull:.2f}", f"+{bull_return:.2f}% Upside")
             
             # Add a structural data insight footer
             st.caption(
-                f"**Engine Note:** Projections are derivative of the 4-year rolling historical standard deviation ({std_dev*100:.2f}% daily token variance) "
-                f"using a square-root-of-time risk distribution model."
+                f"**Engine Note:** This matrix reflects 100 paths modeling standard geometric drift "
+                f"integrated with random market variance shocks. Percentiles capture density boundaries."
             )
 
             st.markdown("---")
