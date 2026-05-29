@@ -114,6 +114,30 @@ if ticker_input:
             
             fig_pred.update_layout(template='plotly_dark', xaxis_title="Future Date", yaxis_title="Projected Price (USD)", margin=dict(l=20, r=20, t=20, b=20), height=300)
             st.plotly_chart(fig_pred, use_container_width=True)
+            # --- PREDICTIVE METRICS MATRIX ---
+            st.markdown("#### 🎯 12-Month Quant Target Outlook")
+            
+            # Extract the 1-year target terminal values (day 365 is index -1)
+            terminal_base = base_pred[-1]
+            terminal_bull = bull_pred[-1]
+            terminal_bear = bear_pred[-1]
+            
+            # Calculate implied returns from the current market price
+            base_return = ((terminal_base - latest_price) / latest_price) * 100
+            bull_return = ((terminal_bull - latest_price) / latest_price) * 100
+            bear_return = ((terminal_bear - latest_price) / latest_price) * 100
+            
+            # Display target cards using Streamlit columns
+            p1, p2, p3 = st.columns(3)
+            p1.metric("Bear Case Target (1.5σ)", f"${terminal_bear:.2f}", f"{bear_return:.2f}% Downside", delta_color="inverse")
+            p2.metric("Base Case Target (Expected)", f"${terminal_base:.2f}", f"+{base_return:.2f}% Upside")
+            p3.metric("Bull Case Target (1.5σ)", f"${terminal_bull:.2f}", f"+{bull_return:.2f}% Upside")
+            
+            # Add a structural data insight footer
+            st.caption(
+                f"**Engine Note:** Projections are derivative of the 4-year rolling historical standard deviation ({std_dev*100:.2f}% daily token variance) "
+                f"and log-normal drift models. Actual distributions may skew based on underlying systemic macro catalysts."
+            )
             
             st.markdown("---")
             
