@@ -95,17 +95,27 @@ if ticker_input:
             st.markdown("---")
             
             # --- 1-YEAR FORECAST ENGINE ---
+           # --- 1-YEAR FORECAST ENGINE ---
+           # --- 1-YEAR FORECAST ENGINE ---
             st.subheader("🔮 1-Year Volatility Funnel Projections")
-            st.markdown("Calculated via statistical trend-line distribution models.")
+            st.markdown("Calculated via risk-adjusted drift and square-root-of-time volatility scaling.")
             
-            future_dates = [df.index[-1] + timedelta(days=i) for i in range(1, 366)]
+            future_dates = [df.index[-1] + timedelta(days=int(i)) for i in range(1, 366)]
             std_dev = df['Daily_Return'].std()
             avg_return = df['Daily_Return'].mean()
             days_future = np.arange(1, 366)
             
+            # 1. Base Case: Standard expected log-drift over time
             base_pred = latest_price * (1 + avg_return) ** days_future
-            bull_pred = latest_price * (1 + avg_return + (1.5 * std_dev)) ** days_future
-            bear_pred = latest_price * (1 + avg_return - (1.5 * std_dev)) ** days_future
+            
+            # 2. Volatility Funnel: Scale standard deviation by the square root of future days
+            volatility_buffer = 1.5 * std_dev * np.sqrt(days_future)
+            
+            bull_pred = base_pred * (1 + volatility_buffer)
+            bear_pred = base_pred * (1 - volatility_buffer)
+            
+            # Force the bear case to clip at $0.00 if extreme volatility drops it below zero
+            bear_pred = np.clip(bear_pred, 0, None)
             
             fig_pred = go.Figure()
             fig_pred.add_trace(go.Scatter(x=future_dates, y=bull_pred, mode='lines', name='🟢 Target Upper Bound (Bull)', line=dict(dash='dash', color='#2ecc71')))
@@ -114,13 +124,14 @@ if ticker_input:
             
             fig_pred.update_layout(template='plotly_dark', xaxis_title="Future Date", yaxis_title="Projected Price (USD)", margin=dict(l=20, r=20, t=20, b=20), height=300)
             st.plotly_chart(fig_pred, use_container_width=True)
+            
             # --- PREDICTIVE METRICS MATRIX ---
             st.markdown("#### 🎯 12-Month Quant Target Outlook")
             
-            # Extract the 1-year target terminal values (day 365 is index -1)
-            terminal_base = base_pred[-1]
-            terminal_bull = bull_pred[-1]
-            terminal_bear = bear_pred[-1]
+            # Extract the corrected 1-year target terminal values
+            terminal_base = float(base_pred[-1])
+            terminal_bull = float(bull_pred[-1])
+            terminal_bear = float(bear_pred[-1])
             
             # Calculate implied returns from the current market price
             base_return = ((terminal_base - latest_price) / latest_price) * 100
@@ -136,9 +147,9 @@ if ticker_input:
             # Add a structural data insight footer
             st.caption(
                 f"**Engine Note:** Projections are derivative of the 4-year rolling historical standard deviation ({std_dev*100:.2f}% daily token variance) "
-                f"and log-normal drift models. Actual distributions may skew based on underlying systemic macro catalysts."
+                f"using a square-root-of-time risk distribution model."
             )
-            
+
             st.markdown("---")
             
             # --- LIVE NEWS & SENTIMENT VERDICT ENGINE ---
