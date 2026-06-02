@@ -37,9 +37,8 @@ st.markdown("""
 # --- HEADER ---
 st.title("Market Mood: AI-Driven Financial Forecasting")
 st.markdown("""
-This application leverages **Meta's Prophet**, an additive time-series forecasting model, to analyze historical price trends. 
-It accounts for seasonality—capturing daily, weekly, and yearly patterns—while providing a 30-day projection 
-complete with uncertainty intervals to help visualize potential market volatility.
+This application analyzes the **last 4 years** of historical price action to provide a 30-day projection using **Meta's Prophet**. 
+The dashboard provides an executive summary of current pricing, future forecasts, and real-time sentiment analysis derived from market news.
 """)
 
 # --- SEARCH BOX LOGIC ---
