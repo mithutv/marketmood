@@ -62,32 +62,37 @@ if st.button("Generate Forecast"):
                 prophet_df = prophet_df[prophet_df['ds'] >= four_years_ago].dropna()
                 current_price = prophet_df['y'].iloc[-1]
 
-               # Prophet Engine
-                m = Prophet(daily_seasonality=True).fit(prophet_df)
-                forecast = m.predict(m.make_future_dataframe(periods=30))
-                forecasted_price = forecast['yhat'].iloc[-1]
-                delta = forecasted_price - current_price
-                growth_pct = ((forecasted_price - current_price) / current_price) * 100
-                trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
-                
-                
-                # Create horizons
-                future_30 = m.make_future_dataframe(periods=30)
-                future_6m = m.make_future_dataframe(periods=180)
-                future_1y = m.make_future_dataframe(periods=365)
-                
-                forecast_30 = m.predict(future_30)
-                forecast_6m = m.predict(future_6m)
-                forecast_1y = m.predict(future_1y)
-                
-                price_30 = forecast_30['yhat'].iloc[-1]
-                price_6m = forecast_6m['yhat'].iloc[-1]
-                price_1y = forecast_1y['yhat'].iloc[-1]
-                
-                # Helper to calculate dollar delta
-                def get_delta_text(forecasted, current):
-                    diff = forecasted - current
-                    return f"{diff:+.2f}"
+              # --- Prophet Engine ---
+            m = Prophet(daily_seasonality=True).fit(prophet_df)
+            
+            # Create horizons
+            future_30 = m.make_future_dataframe(periods=30)
+            future_6m = m.make_future_dataframe(periods=180)
+            future_1y = m.make_future_dataframe(periods=365)
+            
+            # Generate predictions
+            forecast_30 = m.predict(future_30)
+            forecast_6m = m.predict(future_6m)
+            forecast_1y = m.predict(future_1y)
+            
+            # Extract final prices
+            price_30 = forecast_30['yhat'].iloc[-1]
+            price_6m = forecast_6m['yhat'].iloc[-1]
+            price_1y = forecast_1y['yhat'].iloc[-1]
+            
+            # Helper to calculate dollar delta
+            def get_delta_text(forecasted, current):
+                return f"{forecasted - current:+.2f}"
+
+            # Metrics Row (Displayed ONLY once)
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Current", f"${current_price:,.2f}")
+            col2.metric("30-Day", f"${price_30:,.2f}", get_delta_text(price_30, current_price))
+            col3.metric("6-Month", f"${price_6m:,.2f}", get_delta_text(price_6m, current_price))
+            col4.metric("1-Year", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
+            
+            # Use 30-day forecast for the trend description below the graph
+            trend_emoji = "📈 (Bullish)" if price_30 > current_price else "📉 (Bearish)"
 
                 # Displaying these as metrics with dollar delta
                 col1, col2, col3, col4 = st.columns(4)
