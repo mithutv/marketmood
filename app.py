@@ -48,8 +48,9 @@ selected_ticker = st_searchbox(
     label="Search for a Company"
 )
 
-ticker = selected_ticker if selected_ticker else "NVDA"
-st.write(f"##### Selected Ticker: {ticker}")
+ticker = selected_ticker  # It will be None until the user searches
+if ticker:
+    st.write(f"### Selected Ticker: {ticker}")
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker):
