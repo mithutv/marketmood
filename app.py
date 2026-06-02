@@ -168,31 +168,38 @@ if st.button("Generate Forecast"):
                     status_label = "⚪ Neutral"
 
                 # --- 4. Render Gauge ---
-                gauge_html = f"""
+               gauge_html = f"""
                 <style>
-                .gauge-container {{ width: 100%; max-width: 400px; margin: 20px auto; font-family: sans-serif; text-align: center; }}
-                .gauge-base {{ position: relative; width: 100%; height: 30px; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; }}
-                .gauge-fill {{ position: absolute; height: 100%; background-color: {gauge_color}; width: {normalized_score}%; border-radius: 15px; transition: width 0.5s ease-in-out; z-index: 0; }}
-                
-                /* Fixed Center Marker */
-                .gauge-center-line {{ position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background-color: white; z-index: 1; }}
-                
-                .gauge-labels {{ display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem; font-weight: 600; color: #444; }}
-                .gauge-center-label {{ font-weight: 800; font-size: 1.2rem; margin-top: 12px; color: {gauge_color}; }}
+                .meter-container {{ 
+                    width: 100%; max-width: 300px; margin: 20px auto; 
+                    text-align: center; font-family: sans-serif; 
+                }}
+                .meter-arc {{ 
+                    position: relative; width: 100%; height: 150px; 
+                    background: conic-gradient(from 270deg, #F44336 0deg, #E0E0E0 90deg, #4CAF50 180deg);
+                    border-radius: 150px 150px 0 0; overflow: hidden;
+                }}
+                .meter-inner {{ 
+                    position: absolute; top: 30px; left: 30px; right: 30px; bottom: 0; 
+                    background: white; border-radius: 120px 120px 0 0;
+                }}
+                /* Needle calculation: -90deg is far left, +90deg is far right */
+                .meter-needle {{ 
+                    position: absolute; bottom: 0; left: 50%; width: 4px; height: 120px; 
+                    background: #333; transform-origin: bottom; 
+                    transform: rotate({(avg_sentiment * 90)}deg); 
+                    transition: transform 0.8s ease-in-out;
+                }}
+                .meter-label {{ font-weight: 800; font-size: 1.4rem; margin-top: 10px; color: {gauge_color}; }}
                 </style>
                 
-                <div class="gauge-container">
-                    <div style="font-size: 1.1rem; margin-bottom: 5px; font-weight: 500;">Market Sentiment Gauge</div>
-                    <div class="gauge-base">
-                        <div class="gauge-fill"></div>
-                        <div class="gauge-center-line"></div>
+                <div class="meter-container">
+                    <div class="meter-arc">
+                        <div class="meter-inner"></div>
+                        <div class="meter-needle"></div>
                     </div>
-                    <div class="gauge-labels">
-                        <span>🔴 Bearish</span>
-                        <span>Neutral</span>
-                        <span>🟢 Bullish</span>
-                    </div>
-                    <div class="gauge-center-label">{status_label} ({avg_sentiment:.2f})</div>
+                    <div class="meter-label">{status_label}</div>
+                    <div style="color: #666;">Score: {avg_sentiment:.2f}</div>
                 </div>
                 """
                 st.markdown(gauge_html, unsafe_allow_html=True)
