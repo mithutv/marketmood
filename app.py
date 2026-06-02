@@ -38,7 +38,7 @@ st.markdown("""
 # --- HEADER & SCOPE NOTE ---
 st.title("QuantLens: AI-Driven Financial Forecasting")
 st.markdown("""
-    <div style="font-size: 20px; color: #333; margin-bottom: 20px;">
+    <div style="font-size: 18px; color: #333; margin-bottom: 5px;">
         This application utilizes Meta's Prophet time-series library to 
         analyze historical stock price trends and generate a 30-day predictive forecast for retail investors.
     </div>
@@ -49,7 +49,7 @@ def get_stock_data(ticker):
     return yf.download(ticker, threads=False, multi_level_index=False)
 
 # --- USER INPUT ---
-st.markdown('<div style="font-size: 20px; font-weight: bold;">Analyze a new stock:</div>', unsafe_allow_html=True)
+st.markdown('<div style="font-size: 22px; font-weight: bold;">Analyze a new stock:</div>', unsafe_allow_html=True)
 ticker = st.text_input(label="Hidden", label_visibility="collapsed", placeholder="e.g., NVDA, AAPL", value="NVDA").upper()
 
 # --- FORECAST LOGIC ---
@@ -70,25 +70,38 @@ if st.button("Generate Forecast"):
             display_df['ds'] = display_df['ds'].dt.strftime('%b %d, %Y')
             display_df.columns = ['Date', 'Closing Price']
             
-            
+            # Assuming your df has a 'Closing Price' column
+            latest_price = display_df['Closing Price'].iloc[-2]
+            forecasted_price = display_df['Closing Price'].iloc[-1]
+
+            # Logic to choose emoji
+            if forecasted_price > latest_price:
+                trend_emoji = "📈 (Bullish)"
+            elif forecasted_price < latest_price:
+                trend_emoji = "📉 (Bearish)"
+            else:
+                    trend_emoji = "➡️ (Neutral)"
+
+            # Display the trend with an emoji
+            st.subheader(f"Prediction Trend: {trend_emoji}")
             # Table Header
             st.markdown(f'<div style="font-size: 24px; font-weight: bold; color: #00008B; margin-top: 20px; align: centert;">Historical Data for {ticker}</div>', unsafe_allow_html=True)
             st.dataframe(
-    display_df, 
-    use_container_width=True, 
-    hide_index=True,
-    height=400,
-    column_config={
-        "Date": st.column_config.TextColumn(
-            "Date", 
-            width="medium",
-            # This aligns the content; headers usually follow this
-            alignment="left" 
-        ),
-        "Closing Price": st.column_config.NumberColumn(
-            "Closing Price", 
-            format="$%.2f",
-            alignment="left" 
+                display_df, 
+                use_container_width=True, 
+                hide_index=True,
+                height=400,
+                column_config={
+                "Date": st.column_config.TextColumn(
+                "Date", 
+                width="medium",
+                    # This aligns the content; headers usually follow this
+                alignment="left" 
+                ),
+              "Closing Price": st.column_config.NumberColumn(
+                "Closing Price", 
+                format="$%.2f",
+                alignment="left" 
         )
     }
 )
