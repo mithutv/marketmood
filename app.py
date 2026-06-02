@@ -129,16 +129,16 @@ if st.button("Generate Forecast"):
 
             # 8. News Section & Sentiment Analysis
             st.markdown("### Recent Market News")
-search = yf.Search(ticker)
-news = search.news
+            search = yf.Search(ticker)
+            news = search.news
 
-if news:
-    # Process the news list (it is usually a list of dictionaries)
-    for item in news[:3]:
-        st.markdown(f"**{item.get('title')}**")
-        st.caption(f"Source: {item.get('publisher')}")
-else:
-    st.info("No news found via Search API. Trying Ticker object...")
+            if news:
+                # Process the news list (it is usually a list of dictionaries)
+                for item in news[:3]:
+                    st.markdown(f"**{item.get('title')}**")
+                    st.caption(f"Source: {item.get('publisher')}")
+            else:
+                    st.info("No news found via Search API. Trying Ticker object...")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
