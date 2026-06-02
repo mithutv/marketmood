@@ -71,20 +71,21 @@ if st.button("Generate Forecast"):
             """, unsafe_allow_html=True)
             
             # Show Table (Clean and center-aligned)
-            st.dataframe(
+              st.dataframe(
     display_df, 
     use_container_width=True, 
     hide_index=True,
+    height=400, # This forces a scrollable area of 400 pixels
     column_config={
         "Date": st.column_config.TextColumn(
             "Date", 
             width="medium",
-            alignment="left"  
+            alignment="left"
         ),
         "Closing Price": st.column_config.NumberColumn(
             "Closing Price", 
             format="$%.2f",
-            alignment="left" 
+            alignment="left"
         )
     }
 )
