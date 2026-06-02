@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from prophet import Prophet
 from streamlit_searchbox import st_searchbox
 import nltk
+from textblob import TextBlob
 
 try:
     nltk.data.find('tokenizers/punkt')
@@ -53,8 +54,8 @@ selected_ticker = st_searchbox(
     placeholder="Start typing a company name (e.g., Costco)...",
     label="Search for a Company"
 )
-from textblob import TextBlob
-ticker = selected_ticker  # It will be None until the user searches
+
+ticker = selected_ticker
 if ticker:
     st.write(f"### Selected Ticker: {ticker}")
 
@@ -67,7 +68,6 @@ if st.button("Generate Forecast"):
     try:
         # 1. Fetch Data
         df = get_stock_data(ticker)
-        ticker_obj = yf.Ticker(ticker)
         
         if df.empty:
             st.error("No data found for this ticker.")
@@ -76,31 +76,45 @@ if st.button("Generate Forecast"):
             df.columns = df.columns.get_level_values(0) if isinstance(df.columns, pd.MultiIndex) else df.columns
             target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
             prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
-            
-            # Clean the data
             prophet_df = prophet_df.dropna()
             prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
-            
-            # Use the most recent price from our data to avoid API rate limits
             current_price = prophet_df['y'].iloc[-1]
             
             # 3. Prophet Engine
             m = Prophet(daily_seasonality=True).fit(prophet_df)
             forecast = m.predict(m.make_future_dataframe(periods=30))
             
-            # 4. Metrics Calculation
+            # 4. Metrics & Sentiment Calculation
             forecasted_price = forecast['yhat'].iloc[-1]
             delta = forecasted_price - current_price
+            growth_pct = ((forecasted_price - current_price) / current_price) * 100
             trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
             
-            # 5. UI Output
-            col1, col2 = st.columns(2)
+            search = yf.Search(ticker)
+            news_items = search.news 
+            valid_news = [item for item in news_items if item.get('title')]
+            
+            avg_sentiment = 0.0
+            if valid_news:
+                sentiment_scores = [TextBlob(item.get('title')).sentiment.polarity for item in valid_news[:3]]
+                avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
+            
+            if avg_sentiment > 0.1:
+                status_label = "🟢 Bullish"
+            elif avg_sentiment < -0.1:
+                status_label = "🔴 Bearish"
+            else:
+                status_label = "⚪ Neutral"
+
+            # 5. UI Output - REORGANIZED
+            col1, col2, col3 = st.columns(3)
             col1.metric("Current Price", f"${current_price:,.2f}")
             col2.metric("Forecast Price (30 Days)", f"${forecasted_price:,.2f}", delta=f"{delta:+.2f}")
+            col3.metric("**Aggregate Sentiment**", f"{avg_sentiment:.2f}", status_label)
             
             st.subheader(f"Prediction Trend: {trend_emoji}")
             
-            # 6. Graph
+            # Graph
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'))
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(0, 0, 255, 0.1)', name='Confidence Interval'))
@@ -109,104 +123,25 @@ if st.button("Generate Forecast"):
             fig.update_layout(title=f"Price Forecast for {ticker}", template="plotly_white")
             st.plotly_chart(fig, use_container_width=True)
             
-            # --- SUMMARY ---
-            st.markdown("### Forecast Summary")
-            growth_pct = ((forecasted_price - current_price) / current_price) * 100
-            summary_text = f"""
-            Based on the analysis of historical price patterns, the model suggests a {trend_emoji} trend. 
-            The projected price 30 days from now is **${forecasted_price:,.2f}**, which represents 
-            a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${current_price:,.2f}**.
-            """
-            st.info(summary_text)
+            # Summary
+            st.info(f"Based on the analysis of historical price patterns, the model suggests a {trend_emoji} trend. The projected price 30 days from now is **${forecasted_price:,.2f}**, which represents a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${current_price:,.2f}**.")
             
-            # 7. Historical Table
-            display_df = prophet_df.copy()
-            display_df['ds'] = display_df['ds'].dt.strftime('%b %d, %Y')
-            display_df.columns = ['Date', 'Closing Price']
-            st.markdown(f"### Historical Data for {ticker}")
-            st.dataframe(display_df, use_container_width=True, hide_index=True, height=400)
+            # Collapsible Table
+            with st.expander("View Historical Data"):
+                display_df = prophet_df.copy()
+                display_df['ds'] = display_df['ds'].dt.strftime('%b %d, %Y')
+                display_df.columns = ['Date', 'Closing Price']
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-
-
-           # 8. News Section & Sentiment Analysis
+            # News Section
             st.markdown("### Recent Market News")
-            
-            search = yf.Search(ticker)
-            news_items = search.news 
-            valid_news = [item for item in news_items if item.get('title')]
-            
             if valid_news:
-                sentiment_scores = []
-                
-                # --- 1. Display Headlines ---
                 for item in valid_news[:3]:
-                    analysis = TextBlob(item.get('title'))
-                    sentiment_scores.append(analysis.sentiment.polarity)
-                    
                     link = item.get('link') or item.get('clickThroughUrl') or "#"
-                    
                     st.markdown(f"**{item.get('title')}**")
-                    if link != "#":
-                        st.caption(f"Source: {item.get('publisher')} | [Read More]({link})")
-                    else:
-                        st.caption(f"Source: {item.get('publisher')}")
-                
-                # --- 2. Calculate Sentiment ---
-                avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
-                
-                # --- 3. Determine Gauge Visuals ---
-                normalized_score = (avg_sentiment + 1) * 50
-                
-                if avg_sentiment > 0.1:
-                    gauge_color = "#4CAF50" # Green
-                    status_label = "🟢 Bullish"
-                elif avg_sentiment < -0.1:
-                    gauge_color = "#F44336" # Red
-                    status_label = "🔴 Bearish"
-                else:
-                    gauge_color = "#9E9E9E" # Gray
-                    status_label = "⚪ Neutral"
-
-                # --- 4. Render Gauge ---
-              # --- 4. Render Meter-Style Gauge ---
-                # Ensure the f-string is properly closed
-                gauge_html = f"""
-                <style>
-                .meter-container {{ 
-                    width: 100%; max-width: 300px; margin: 20px auto; 
-                    text-align: center; font-family: sans-serif; 
-                }}
-                .meter-arc {{ 
-                    position: relative; width: 100%; height: 150px; 
-                    background: conic-gradient(from 270deg, #F44336 0deg, #E0E0E0 90deg, #4CAF50 180deg);
-                    border-radius: 150px 150px 0 0; overflow: hidden;
-                }}
-                .meter-inner {{ 
-                    position: absolute; top: 30px; left: 30px; right: 30px; bottom: 0; 
-                    background: white; border-radius: 120px 120px 0 0;
-                }}
-                .meter-needle {{ 
-                    position: absolute; bottom: 0; left: 50%; width: 4px; height: 120px; 
-                    background: #333; transform-origin: bottom; 
-                    /* Use a helper variable for the rotation to avoid f-string brace conflicts */
-                    transform: rotate({(avg_sentiment * 90)}deg); 
-                    transition: transform 0.8s ease-in-out;
-                }}
-                .meter-label {{ font-weight: 800; font-size: 1.4rem; margin-top: 10px; color: {gauge_color}; }}
-                </style>
-                
-                <div class="meter-container">
-                    <div class="meter-arc">
-                        <div class="meter-inner"></div>
-                        <div class="meter-needle"></div>
-                    </div>
-                    <div class="meter-label">{status_label}</div>
-                    <div style="color: #666;">Score: {avg_sentiment:.2f}</div>
-                </div>
-                """
-                st.markdown(gauge_html, unsafe_allow_html=True)
+                    st.caption(f"Source: {item.get('publisher')} | [Read More]({link})" if link != "#" else f"Source: {item.get('publisher')}")
             else:
                 st.info("No recent news headlines available.")
-                
+
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
