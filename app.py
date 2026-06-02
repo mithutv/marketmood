@@ -28,8 +28,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- HEADER ---
-st.title("QuantLens: AI-Driven Financial Forecasting")
-st.markdown("This application utilizes Meta's Prophet library to analyze trends and generate a 30-day predictive forecast.")
+st.title("Market Mood: AI-Driven Financial Forecasting")
+st.markdown("""
+This application leverages **Meta's Prophet**, an additive time-series forecasting model, to analyze historical price trends. 
+It accounts for seasonality—capturing daily, weekly, and yearly patterns—while providing a 30-day projection 
+complete with uncertainty intervals to help visualize potential market volatility.
+""")
 
 # --- SEARCH BOX LOGIC ---
 def search_tickers(searchterm: str):
@@ -86,6 +90,18 @@ if st.button("Generate Forecast"):
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
             fig.update_layout(title=f"Price Forecast for {ticker}", template="plotly_white")
             st.plotly_chart(fig, use_container_width=True)
+            # --- ADD SUMMARY HERE ---
+            st.markdown("### Forecast Summary")
+            growth_pct = ((forecasted_price - latest_price) / latest_price) * 100
+            summary_text = f"""
+            Based on the analysis of historical price patterns, the model suggests a {trend_emoji} trend. 
+            The projected price 30 days from now is **${forecasted_price:,.2f}**, which represents 
+            a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${latest_price:,.2f}**.
+            
+            *Note: The shaded area in the chart represents the confidence interval, indicating the range 
+            of potential price variance based on historical volatility.*
+            """
+            st.info(summary_text)
             
             # 7. Historical Table
             display_df = prophet_df.copy()
