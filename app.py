@@ -72,8 +72,8 @@ if st.button("Generate Forecast"):
             
             # Show Table (Clean and center-aligned)
          st.dataframe(
-    display_df, 
-    use_container_width=True, 
+             display_df,
+             use_container_width=True, 
     hide_index=True,
     height=400, # This forces a scrollable area of 400 pixels
     column_config={
