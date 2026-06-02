@@ -37,8 +37,9 @@ def search_tickers(searchterm: str):
 ticker = st_searchbox(search_tickers, placeholder="Start typing a company name...", label="Search for a Company")
 if ticker: st.write(f"### Selected Ticker: {ticker}")
 
+# Explicitly fetch 5 years of data so the 4-year filter works
 @st.cache_data(ttl=86400)
-def get_stock_data(ticker): return yf.download(ticker, threads=False, multi_level_index=False)
+def get_stock_data(ticker): return yf.download(ticker, period="5y", threads=False, multi_level_index=False)
 
 # --- FORECAST LOGIC ---
 if st.button("Generate Forecast") and ticker:
@@ -97,20 +98,19 @@ if st.button("Generate Forecast") and ticker:
             st.plotly_chart(fig, use_container_width=True)
             st.info(f"The model suggests a {trend_emoji} trend. Projected price: **${forecasted_price:,.2f}** ({delta:+.2f} | {growth_pct:+.2f}%).")
             
-            # Annual Table
-            with st.expander("View Annual Historical Summary"):
+            # Quarterly Historical Table
+            with st.expander("View Quarterly Historical Summary"):
                 summary_df = prophet_df.copy()
                 summary_df['Year'] = summary_df['ds'].dt.year
-                annual = summary_df.groupby('Year')['y'].agg(['mean', 'max', 'min']).reset_index().sort_values('Year', ascending=False)
-                annual.columns = ['Year', 'Avg Price', 'High', 'Low']
-                for col in ['Avg Price', 'High', 'Low']: annual[col] = annual[col].map('${:,.2f}'.format)
-                st.dataframe(annual, use_container_width=True, hide_index=True)
-
-            # News
-            st.write('<h3 style="margin-bottom: 0px;">Recent Market News</h3>', unsafe_allow_html=True)
-            for item in valid_news[:3]:
-                link = item.get('link') or item.get('clickThroughUrl') or "#"
-                st.markdown(f"**{item.get('title')}**")
-                st.caption(f"Source: {item.get('publisher')} | [Read More]({link})" if link != "#" else f"Source: {item.get('publisher')}")
-    except Exception as e:
-        st.error(f"Error: {e}")
+                summary_df['Quarter'] = summary_df['ds'].dt.quarter
+                
+                # Group by Year and Quarter
+                quarterly = summary_df.groupby(['Year', 'Quarter'])['y'].agg(['mean', 'max', 'min']).reset_index()
+                quarterly = quarterly.sort_values(by=['Year', 'Quarter'], ascending=[False, False])
+                
+                # Format a nice 'Period' column (e.g., Q1 2026)
+                quarterly['Period'] = 'Q' + quarterly['Quarter'].astype(str) + ' ' + quarterly['Year'].astype(str)
+                quarterly = quarterly[['Period', 'mean', 'max', 'min']]
+                quarterly.columns = ['Period', 'Avg Price', 'High', 'Low']
+                
+                for col in ['Avg Price',
