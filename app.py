@@ -103,48 +103,61 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-            # --- ROW 3: PATTERN PREDICTOR (ML) ---
+           # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             
-            # 1. Calculate SMA with min_periods to avoid all-NaN start
+            # Feature Calculations
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
-            
-            # 2. RSI Calculation
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            # 3. Clean up the dataframe
-            ml_df = ml_df.bfill().dropna()
+            # Enhanced Features
+            ml_df['ATR'] = (ml_df['High'] - ml_df['Low']).rolling(window=14).mean()
+            ticker_info = yf.Ticker(ticker).info
+            ml_df['PE_Ratio'] = ticker_info.get('trailingPE', 20)
             
-            # Check if SMA actually has data
+            news = yf.Ticker(ticker).news
+            ml_df['Sentiment'] = TextBlob(news[0]['title']).sentiment.polarity if news else 0
+            
+            # Clean and define features
+            ml_df = ml_df.bfill().dropna()
+            features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
+            
             if ml_df['SMA_20'].isnull().all():
-                st.error("Error: SMA calculation returned empty values. Check your data source.")
+                st.error("Error: SMA calculation returned empty values.")
             else:
-                # Define 1-year ahead target (252 trading days)
                 days_ahead = 252 
-                
                 if len(ml_df) > days_ahead: 
-                    X = ml_df[['SMA_20', 'RSI']].iloc[:-days_ahead]
+                    # Use ALL 5 features for X
+                    X = ml_df[features].iloc[:-days_ahead]
                     y = ml_df['y'].shift(-days_ahead).dropna()
-                    
-                    # Align X to match the shortened y length
                     X = X.iloc[:len(y)]
                     
+                    # Train model once
                     model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-                    pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
                     
+                    # Prediction using all 5 features
+                    current_features = ml_df[features].iloc[[-1]]
+                    pred = model.predict(current_features)[0]
+                    
+                    # Feature Importance Plot
+                    st.write("### Model Insight: What drives this prediction?")
+                    importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
+                    importances = importances.sort_values(by='Importance', ascending=False)
+                    st.bar_chart(importances.set_index('Feature'))
+                    
+                    # Display Metric
                     ml_col1, ml_col2 = st.columns([1, 2])
                     ml_col1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                    ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead based on current technical signals.")
+                    ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead based on technicals, sentiment, and fundamentals.")
                 else:
-                    st.warning("Insufficient data to train ML model for 1-year prediction.")
+                    st.warning("Insufficient data for 1-year ML prediction.")
             
             st.divider()
-            
 
             # --- ROW 4: MONTE CARLO ---
             st.markdown("#### Probabilistic Projection: Monte Carlo")
