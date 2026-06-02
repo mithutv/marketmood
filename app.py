@@ -151,5 +151,3 @@ if st.button("Generate Forecast"):
 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
-
-```
