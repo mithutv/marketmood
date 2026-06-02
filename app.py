@@ -73,7 +73,25 @@ if st.button("Generate Forecast"):
             
             # Table Header
             st.markdown(f'<div style="font-size: 20px; font-weight: bold; color: #00008B; margin-top: 20px;">Historical Data for {ticker}</div>', unsafe_allow_html=True)
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(
+    display_df, 
+    use_container_width=True, 
+    hide_index=True,
+    height=400,
+    column_config={
+        "Date": st.column_config.TextColumn(
+            "Date", 
+            width="medium",
+            # This aligns the content; headers usually follow this
+            alignment="center" 
+        ),
+        "Closing Price": st.column_config.NumberColumn(
+            "Closing Price", 
+            format="$%.2f",
+            alignment="center" 
+        )
+    }
+)
 
             # Prophet Engine
             m = Prophet(daily_seasonality=True).fit(prophet_df)
