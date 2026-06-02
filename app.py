@@ -107,7 +107,7 @@ if st.button("Generate Forecast") and ticker:
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             
-            # Feature Calculations
+            # 1. Technical Indicators
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
@@ -115,47 +115,33 @@ if st.button("Generate Forecast") and ticker:
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            # --- FIX: USE ORIGINAL 'df' FOR HIGH/LOW ---
-            # 'df' is the original yfinance download that contains all columns
-            high_low = df['High'] - df['Low']
-            ml_df['ATR'] = high_low.rolling(window=14).mean()
-            
-            # Fundamentals (P/E Ratio)
+            # 2. Enhanced Features (Volatility, Fundamentals, Sentiment)
+            ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
             ticker_info = yf.Ticker(ticker).info
             ml_df['PE_Ratio'] = ticker_info.get('trailingPE', 20)
             
-            # 3. Sentiment (News Headlines)
             news = yf.Ticker(ticker).news
-            # Safely get the title if it exists, otherwise default to empty string
-            if news and isinstance(news, list) and len(news) > 0 and 'title' in news[0]:
-                headline = news[0]['title']
-                ml_df['Sentiment'] = TextBlob(headline).sentiment.polarity
-            else:
-                ml_df['Sentiment'] = 0 # Neutral if no news or no title found
+            ml_df['Sentiment'] = TextBlob(news[0]['title']).sentiment.polarity if (news and isinstance(news, list) and len(news) > 0 and 'title' in news[0]) else 0
             
-            
-            # Clean and define features
-            ml_df = ml_df.bfill().dropna()
+            # 3. Clean data (fill missing values instead of dropping)
+            ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
             
             if ml_df['SMA_20'].isnull().all():
-                st.error("Error: SMA calculation returned empty values.")
+                st.error("Error: ML feature calculation returned empty values.")
             else:
                 days_ahead = 252 
+                # Ensure we have enough history to train for 1-year ahead
                 if len(ml_df) > days_ahead: 
-                    # Use ALL 5 features for X
                     X = ml_df[features].iloc[:-days_ahead]
                     y = ml_df['y'].shift(-days_ahead).dropna()
                     X = X.iloc[:len(y)]
                     
-                    # Train model once
+                    # Train model and predict
                     model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+                    pred = model.predict(ml_df[features].iloc[[-1]])[0]
                     
-                    # Prediction using all 5 features
-                    current_features = ml_df[features].iloc[[-1]]
-                    pred = model.predict(current_features)[0]
-                    
-                    # Feature Importance Plot
+                    # Feature Importance
                     st.write("### Model Insight: What drives this prediction?")
                     importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
                     importances = importances.sort_values(by='Importance', ascending=False)
@@ -166,7 +152,7 @@ if st.button("Generate Forecast") and ticker:
                     ml_col1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
                     ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead based on technicals, sentiment, and fundamentals.")
                 else:
-                    st.warning("Insufficient data for 1-year ML prediction.")
+                    st.warning("Insufficient historical data to train 1-year ML model.")
             
             st.divider()
 
