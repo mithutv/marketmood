@@ -155,9 +155,77 @@ if st.button("Generate Forecast"):
                         st.caption(f"Source: {item.get('publisher')} (No link available)")
                 
                 # 4. Sentiment Summary
-                avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
-                label = "🟢 Bullish" if avg_sentiment > 0.1 else ("🔴 Bearish" if avg_sentiment < -0.1 else "⚪ Neutral")
-                st.metric("**Aggregate Sentiment Score**", f"{avg_sentiment:.2f}", label)
+                # Normalize the score from [-1, 1] to [0, 100] for the CSS gauge
+                normalized_score = (avg_sentiment + 1) * 50
+                
+                # Determine color and dynamic emoji label
+                if avg_sentiment > 0.1:
+                    gauge_color = "#4CAF50" # Green
+                    status_label = "🟢 Bullish"
+                elif avg_sentiment < -0.1:
+                    gauge_color = "#F44336" # Red
+                    status_label = "🔴 Bearish"
+                else:
+                    gauge_color = "#9E9E9E" # Gray
+                    status_label = "⚪ Neutral"
+
+                # Define the HTML and CSS for the gauge visualization
+                gauge_html = f"""
+                <style>
+                .gauge-container {{
+                    width: 100%;
+                    max-width: 400px;
+                    margin: 20px auto;
+                    font-family: sans-serif;
+                    text-align: center;
+                }}
+                .gauge-base {{
+                    position: relative;
+                    width: 100%;
+                    height: 50px;
+                    background-color: #e0e0e0;
+                    border-radius: 25px;
+                    overflow: hidden;
+                    box-shadow: inset 0px 2px 5px rgba(0,0,0,0.1);
+                }}
+                .gauge-fill {{
+                    height: 100%;
+                    background-color: {gauge_color};
+                    width: {normalized_score}%;
+                    border-radius: 25px;
+                    transition: width 0.5s ease-in-out;
+                }}
+                .gauge-labels {{
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 8px;
+                    font-size: 0.85rem;
+                    color: #666;
+                }}
+                .gauge-center-label {{
+                    font-weight: bold;
+                    font-size: 1.1rem;
+                    margin-top: 10px;
+                    color: {gauge_color};
+                }}
+                </style>
+                <div class="gauge-container">
+                    <h3>Aggregate Sentiment Score</h3>
+                    <div class="gauge-base">
+                        <div class="gauge-fill"></div>
+                    </div>
+                    <div class="gauge-labels">
+                        <span>🔴 Bearish (-1)</span>
+                        <span>⚪ Neutral (0)</span>
+                        <span>🟢 Bullish (+1)</span>
+                    </div>
+                    <div class="gauge-center-label">{status_label} | Score: {avg_sentiment:.2f}</div>
+                </div>
+                """
+                
+                # Render the gauge
+                st.markdown(gauge_html, unsafe_allow_html=True)
+
             else:
                 st.info("No recent news headlines available.")
                 
