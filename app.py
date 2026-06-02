@@ -68,6 +68,7 @@ if st.button("Generate Forecast"):
                 forecasted_price = forecast['yhat'].iloc[-1]
                 delta = forecasted_price - current_price
                 growth_pct = ((forecasted_price - current_price) / current_price) * 100
+                trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
                 
                 
                 # Create horizons
