@@ -167,25 +167,24 @@ if st.button("Generate Forecast"):
                     gauge_color = "#9E9E9E" # Gray
                     status_label = "⚪ Neutral"
 
-                # --- 4. Render Gauge ---
-               gauge_html = f"""
+              gauge_html = f"""
                 <style>
                 .gauge-container {{ width: 100%; max-width: 400px; margin: 20px auto; font-family: sans-serif; text-align: center; }}
                 .gauge-base {{ position: relative; width: 100%; height: 30px; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; }}
-                .gauge-fill {{ height: 100%; background-color: {gauge_color}; width: {normalized_score}%; border-radius: 15px; transition: width 0.5s ease-in-out; }}
+                .gauge-fill {{ position: absolute; height: 100%; background-color: {gauge_color}; width: {normalized_score}%; border-radius: 15px; transition: width 0.5s ease-in-out; z-index: 0; }}
                 
-                /* Center Marker for 0 position */
-                .gauge-center-line {{ position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background-color: white; z-index: 1; }}
+                /* Fixed Center Marker */
+                .gauge-center-line {{ position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background-color: white; z-index: 1; }}
                 
                 .gauge-labels {{ display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem; font-weight: 600; color: #444; }}
                 .gauge-center-label {{ font-weight: 800; font-size: 1.2rem; margin-top: 12px; color: {gauge_color}; }}
                 </style>
                 
                 <div class="gauge-container">
-                    <div style="font-size: 1.1rem; margin-bottom: 5px;">Market Sentiment Gauge</div>
+                    <div style="font-size: 1.1rem; margin-bottom: 5px; font-weight: 500;">Market Sentiment Gauge</div>
                     <div class="gauge-base">
-                        <div class="gauge-center-line"></div>
                         <div class="gauge-fill"></div>
+                        <div class="gauge-center-line"></div>
                     </div>
                     <div class="gauge-labels">
                         <span>🔴 Bearish</span>
@@ -196,8 +195,6 @@ if st.button("Generate Forecast"):
                 </div>
                 """
                 st.markdown(gauge_html, unsafe_allow_html=True)
-            else:
-                st.info("No recent news headlines available.")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
