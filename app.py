@@ -108,4 +108,5 @@ if st.button("Generate Forecast"):
                 st.markdown(f"- [{item.get('title')}]({item.get('link')})")
             
    except Exception as e:
-       st.error(f"Error generating forecast: {e}")
+    
+        st.error(f"Error generating forecast: {e}")
