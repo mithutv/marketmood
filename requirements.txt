@@ -1,8 +1,12 @@
 # Use the latest version to get the newest anti-blocking patches
 yfinance>=0.2.64
 streamlit
-plotly
+yfinance
 pandas
-numpy
+plotly
 prophet
 streamlit-searchbox
+nltk
+textblob
+numpy
+scikit-learn
