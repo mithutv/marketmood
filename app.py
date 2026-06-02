@@ -9,6 +9,15 @@ from textblob import TextBlob
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
+# Setup NLTK
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+# Page Config
+st.set_page_config(page_title="Marketmood", layout="centered")
+
 st.markdown("""
     <style>
     /* Targeting the Generate Forecast button */
@@ -23,16 +32,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-
-# Setup NLTK
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-
-# Page Config
-st.set_page_config(page_title="Marketmood", layout="centered")
 
 # Header & Scope Note
 st.title("Marketmood: AI-Driven Financial Forecasting")
@@ -75,39 +74,49 @@ if st.button("Generate Forecast") and ticker:
             price_30, price_1y = forecast_30['yhat'].iloc[-1], forecast_1y['yhat'].iloc[-1]
 
             # --- ROW 1: METRICS ---
-            st.subheader(f"Dashboard Summary: {ticker}")
             cols = st.columns(3)
             cols[0].metric("Current Price", f"${current_price:,.2f}")
-            cols[1].metric("30-Day Prophet", f"${price_30:,.2f}")
-            cols[2].metric("1-Year Prophet", f"${price_1y:,.2f}")
+            cols[1].metric("30-Day Prophet", f"${price_30:,.2f}", f"{price_30 - current_price:+.2f}")
+            cols[2].metric("1-Year Prophet", f"${price_1y:,.2f}", f"{price_1y - current_price:+.2f}")
             st.divider()
 
-
-            # --- ROW 2: TREND PROJECTION (Prophet) ---
-            st.markdown("#### 📈 Trend Projection (Prophet)")
+            # --- ROW 2: TREND PROJECTION ---
+            st.markdown("#### Trend Projection (Prophet)")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual'))
             fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='Forecast'))
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
+            st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
+            st.divider()
+
+            # --- ROW 3: PATTERN PREDICTOR (ML) ---
+            st.markdown("#### Pattern Predictor (ML)")
+            ml_df = prophet_df.copy()
+            ml_df['SMA_20'] = ml_df['y'].rolling(window=20).mean()
+            delta = ml_df['y'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            ml_df['RSI'] = 100 - (100 / (1 + gain / loss))
+            ml_df = ml_df.dropna()
+            X, y = ml_df[['SMA_20', 'RSI']].iloc[:-1], ml_df['y'].shift(-1).dropna()
+            model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+            pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
             
-            # Prophet Summary
-            st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**. "
-                    f"This trend analysis accounts for historical seasonality, identifying cyclical patterns that suggest a move of "
-                    f"{((price_1y - current_price)/current_price)*100:+.1f}% over the next 12 months.")
+            ml_col1, ml_col2 = st.columns([1, 2])
+            ml_col1.metric("ML Next Day Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
+            ml_col2.caption("Random Forest Model based on 20-day SMA and RSI.")
             st.divider()
 
             # --- ROW 4: MONTE CARLO ---
-            st.markdown("#### 🎲 Probabilistic Projection (Monte Carlo)")
-            # ... (your existing MC plotting code here) ...
-            st.plotly_chart(fig_mc, use_container_width=True)
+            st.markdown("#### Probabilistic Projection: Monte Carlo")
+            def run_mc(prices, days=1000):
+                returns = prices.pct_change().dropna()
+                daily = np.random.normal(returns.mean(), returns.std(), (days, 50))
+                return prices.iloc[-1] * (1 + daily).cumprod(axis=0)
             
-            # Monte Carlo Summary
-            median_final = paths[-1, :].mean() # Average of all 50 simulations
-            st.warning(f"**Monte Carlo Summary:** We simulated 50 possible future price paths based on the stock's historical volatility. "
-                       f"The **Median Projected Price** at day 1000 is **${median_final:,.2f}**. "
-                       f"The spread between the highest and lowest paths represents the 'volatility cloud'—the wider this cloud, the higher the risk for this specific asset.")
-            st.divider()
-
-    except Exception as e:
-        st.error(f"Error: {e}")
+            paths = run_mc(prophet_df['y'])
+            fig_mc = go.Figure()
+            for i in range(50): fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=1), showlegend=False))
+            fig_mc.update_layout(height=400)
+            st.plotly_chart(fig_mc, use_container_width=True)
