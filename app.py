@@ -4,51 +4,46 @@ import pandas as pd
 import plotly.graph_objects as go
 from prophet import Prophet
 
-# --- GLOBAL STYLES ---
+# --- GLOBAL STYLES (Blue Button, Table Headers, Alignment) ---
 st.markdown("""
     <style>
-    /* ... your existing styles ... */
-    
-    /* Make table headers black, bold, and left-aligned */
+    /* Table Styling */
     [data-testid="stDataFrame"] thead tr th {
         background-color: #000000 !important;
         color: #FFFFFF !important;
         font-weight: bold !important;
         text-align: left !important;
     }
+    [data-testid="stDataFrame"] tbody tr td { text-align: left !important; }
     
-    /* Ensure the body text is also left-aligned */
-    [data-testid="stDataFrame"] tbody tr td {
-        text-align: left !important;
+    /* Blue Button Styling */
+    div.stButton > button:first-child {
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        font-size: 16px;
+        border-radius: 8px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONFIG & CACHE ---
+# --- HEADER & SCOPE NOTE ---
 st.title("QuantLens: AI-Driven Financial Forecasting")
 st.markdown("""
-    <div style="font-size: 26px; color: #555; margin-bottom: 20px;">
-        Precision predictive modeling for modern investors.
+    <div style="font-size: 20px; color: #333; margin-bottom: 20px;">
+        <b>Project Scope:</b> This application utilizes Meta's Prophet time-series library to 
+        analyze historical stock price trends and generate a 30-day predictive forecast for retail investors.
     </div>
 """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker):
-    df = yf.download(ticker, threads=False, multi_level_index=False)
-    return df
+    return yf.download(ticker, threads=False, multi_level_index=False)
 
-st.markdown("""
-    <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">
-        Analyze a new stock
-    </div>
-""", unsafe_allow_html=True)
-
-ticker = st.text_input(
-    label="Hidden Label", 
-    label_visibility="collapsed", 
-    placeholder="e.g., AAPL, NVDA, TSLA", 
-    value="NVDA"
-).upper()
+# --- USER INPUT ---
+st.markdown('<div style="font-size: 20px; font-weight: bold;">Analyze a new stock</div>', unsafe_allow_html=True)
+ticker = st.text_input(label="Hidden", label_visibility="collapsed", placeholder="e.g., NVDA, AAPL", value="NVDA").upper()
 
 # --- FORECAST LOGIC ---
 if st.button("Generate Forecast"):
@@ -57,56 +52,33 @@ if st.button("Generate Forecast"):
         if df.empty:
             st.error("No data found.")
         else:
-            # Prepare Data
-            df_reset = df.reset_index()
-            prophet_df = df_reset[['Date', 'Close']].rename(columns={'Date': 'ds', 'Close': 'y'})
-            
-            # Create display dataframe
+            # Data Prep
+            prophet_df = df.reset_index()[['Date', 'Close']].rename(columns={'Date': 'ds', 'Close': 'y'})
             display_df = prophet_df.copy()
             display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d')
             display_df.columns = ['Date', 'Closing Price']
             
-            # Show Table Header
-            st.markdown(f"""
-                <div style="font-size: 24px; font-weight: bold; color: #00008B; margin-top: 20px; margin-bottom: 10px;">
-                    Historical Data for {ticker}
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # Show Table
-            st.dataframe(
-                display_df, 
-                use_container_width=True, 
-                hide_index=True,
-                column_config={
-                    "Date": st.column_config.TextColumn("Date", width="medium"),
-                    "Closing Price": st.column_config.NumberColumn("Closing Price", format="$%.2f")
-                }
-            )
+            # Table Header
+            st.markdown(f'<div style="font-size: 20px; font-weight: bold; color: #00008B; margin-top: 20px;">Historical Data for {ticker}</div>', unsafe_allow_html=True)
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
 
             # Prophet Engine
-            m = Prophet(daily_seasonality=True)
-            m.fit(prophet_df)
-            future = m.make_future_dataframe(periods=30)
-            forecast = m.predict(future)
+            m = Prophet(daily_seasonality=True).fit(prophet_df)
+            forecast = m.predict(m.make_future_dataframe(periods=30))
             
-            # Plot
+            # Graph
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Forecast', line=dict(color='blue')))
-            fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='black')))
-            fig.update_layout(title=f"Price Forecast for {ticker}", xaxis_title="Date", yaxis_title="Price ($)")
+            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Forecast', line=dict(color='#0000FF')))
+            fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
+            fig.update_layout(title=f"Price Forecast for {ticker}", template="plotly_white")
             st.plotly_chart(fig, use_container_width=True)
             
+            # Graph Description
+            st.markdown("*The graph above displays historical daily closing prices (black) against the AI-generated 30-day forecast trend (blue).*")
+            
             # Summary
-            latest_price = prophet_df['y'].iloc[-1]
-            future_price = forecast['yhat'].iloc[-1]
-            st.markdown(f"""
-                ### Forecast Summary
-                The model has analyzed historical data for **{ticker}**. 
-                The current closing price is **${latest_price:.2f}**. 
-                Based on current trends, the projected price in 30 days is estimated to be **${future_price:.2f}**. 
-                *Note: This is an AI projection and should not be used as financial advice.*
-            """)
+            st.markdown(f"### Forecast Summary: {ticker}")
+            st.write(f"The model estimates the price will move to **${forecast['yhat'].iloc[-1]:.2f}** over the next 30 days based on historical volatility.")
             
     except Exception as e:
         st.error(f"Error: {e}")
