@@ -84,19 +84,23 @@ if st.button("Generate Forecast"):
                                         "Closing Price": st.column_config.NumberColumn("Closing Price", format="$%.2f", alignment="center")})
             
             # 8. News Sentiment Section
-            st.markdown("### Recent Market News")
+          
             ticker_obj = yf.Ticker(ticker)
-            news = ticker_obj.news
-            if news:
+            # Fetch news with a fallback check
+            news = getattr(ticker_obj, 'news', []) 
+            
+            if news and len(news) > 0:
+                st.markdown("### Recent Market News")
                 for item in news[:3]:
                     st.markdown(f"""
                     <div style="background-color: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                        <div style="font-weight: bold;">{item.get('title')}</div>
-                        <div style="font-size: 12px; color: #555;">Source: {item.get('publisher')} | <a href="{item.get('link')}" target="_blank">Read More</a></div>
+                        <div style="font-weight: bold;">{item.get('title', 'No Title')}</div>
+                        <div style="font-size: 12px; color: #555;">Source: {item.get('publisher', 'N/A')} | <a href="{item.get('link', '#')}" target="_blank">Read More</a></div>
                     </div>
                     """, unsafe_allow_html=True)
             else:
-                st.write("No recent news found for this ticker.")
+                # Optionally hide the section if no news exists
+                pass
             
             # 9. Broad Market Sentiment
             st.markdown("### Broad Market Sentiment (S&P 500)")
