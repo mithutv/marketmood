@@ -70,7 +70,7 @@ if st.button("Generate Forecast"):
                 </div>
             """, unsafe_allow_html=True)
             
-            # Show Table (Clean and Left-Aligned)
+            # Show Table (Clean and center-aligned)
             st.dataframe(
     display_df, 
     use_container_width=True, 
@@ -79,12 +79,12 @@ if st.button("Generate Forecast"):
         "Date": st.column_config.TextColumn(
             "Date", 
             width="medium",
-            alignment="center"  # Center-aligns the Date column
+            alignment="center"  # Centers header and column data
         ),
         "Closing Price": st.column_config.NumberColumn(
             "Closing Price", 
             format="$%.2f",
-            alignment="center"  # Center-aligns the Price column
+            alignment="center"  # Centers header and column data
         )
     }
 )
