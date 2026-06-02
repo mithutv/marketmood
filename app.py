@@ -4,6 +4,32 @@ import pandas as pd
 import plotly.graph_objects as go
 from prophet import Prophet
 
+# --- PREPARE DATA FOR DISPLAY ---
+            display_df = prophet_df.copy()
+            # Format date as 'May 26, 2026'
+            display_df['ds'] = display_df['ds'].dt.strftime('%b %d, %Y')
+            display_df.columns = ['Date', 'Closing Price']
+            
+            # Show Table Header (Styled)
+            st.markdown(f"""
+                <div style="font-size: 24px; font-weight: bold; color: #00008B; margin-top: 20px; margin-bottom: 10px;">
+                    Historical Data for {ticker}
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Show Table (Clean and Left-Aligned)
+            st.dataframe(
+                display_df, 
+                use_container_width=True, 
+                hide_index=True,
+                column_config={
+                    "Date": st.column_config.TextColumn("Date", width="medium"),
+                    "Closing Price": st.column_config.NumberColumn(
+                        "Closing Price", 
+                        format="$%.2f"
+                    )
+                }
+            )
 # --- GLOBAL STYLES (Blue Button, Table Headers, Alignment) ---
 st.markdown("""
     <style>
