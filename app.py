@@ -7,7 +7,7 @@ st.markdown("""
     <style>
     /* Change base font size for the whole app */
     .stApp {
-        font-size: 18px;
+        font-size: 24px;
     }
     /* Change font size for specific elements */
     h1 {
