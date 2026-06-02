@@ -120,3 +120,7 @@ if st.button("Generate Forecast") and ticker:
             for i in range(50): fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=1), showlegend=False))
             fig_mc.update_layout(height=400)
             st.plotly_chart(fig_mc, use_container_width=True)
+            st.warning(f"**Monte Carlo Summary:** The **Median Projected Price** at day 1000 is **${np.median(paths[-1, :]):,.2f}**.")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
