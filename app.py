@@ -9,20 +9,22 @@ from prophet import Prophet
 st.markdown("""
     <style>
     /* Table Header: Bold, Black Background, White Text, Left-Aligned, Larger */
-    [data-testid="stDataFrame"] thead tr th {
+ [data-testid="stDataFrame"] thead tr th {
         background-color: #000000 !important;
         color: #FFFFFF !important;
-        font-weight: 800 !important;
+        font-weight: 900 !important; /* Extra bold */
         font-size: 16px !important;
         text-align: left !important;
     }
-    
-    /* Table Body: Left-Aligned, Larger Text */
+    /* Force the second column (Price) to be left-aligned */
+    [data-testid="stDataFrame"] tbody tr td:nth-child(2) {
+        text-align: left !important;
+    }
+  /* Table Body: Left-Align ALL text */
     [data-testid="stDataFrame"] tbody tr td {
         text-align: left !important;
         font-size: 15px !important;
     }
-    
     /* Ensure column headers stay left-aligned */
     [data-testid="stDataFrame"] thead tr th div {
         text-align: left !important;
