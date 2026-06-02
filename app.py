@@ -55,7 +55,6 @@ if st.button("Generate Forecast"):
                 target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
                 prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
                 
-                # Apply 4-Year Filter
                 four_years_ago = pd.Timestamp.now() - pd.DateOffset(years=4)
                 prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
                 prophet_df = prophet_df[prophet_df['ds'] >= four_years_ago].dropna()
@@ -76,42 +75,6 @@ if st.button("Generate Forecast"):
                 def get_delta_text(forecasted, current):
                     return f"{forecasted - current:+.2f}"
 
-                # --- MONTE CARLO SECTION ---
-with st.expander("View 1-Year Monte Carlo Simulation"):
-    st.write("### 1-Year Monte Carlo Projection")
-    st.write("Simulating 500 possible future price paths based on 4 years of volatility.")
-    
-    # Calculate daily returns
-    returns = prophet_df['y'].pct_change().dropna()
-    mu = returns.mean()
-    sigma = returns.std()
-    
-    # Simulation parameters
-    days = 252
-    simulations = 500
-    last_price = prophet_df['y'].iloc[-1]
-    
-    # Generate random paths
-    daily_returns = np.random.normal(mu, sigma, (days, simulations))
-    price_paths = last_price * (1 + daily_returns).cumprod(axis=0)
-    
-    # Calculate percentiles
-    median_path = np.median(price_paths, axis=1)
-    
-    # Plotting
-    fig_mc = go.Figure()
-    # Plot a subset of paths to keep it performant
-    for i in range(50):
-        fig_mc.add_trace(go.Scatter(x=list(range(days)), y=price_paths[:, i], 
-                                     line=dict(color='lightgray', width=1), showlegend=False))
-    
-    # Plot the median (50%) path
-    fig_mc.add_trace(go.Scatter(x=list(range(days)), y=median_path, 
-                                 line=dict(color='blue', width=3), name='Median (50%) Path'))
-    
-    fig_mc.update_layout(template="plotly_white", xaxis_title="Days", yaxis_title="Price")
-    st.plotly_chart(fig_mc, use_container_width=True)
-    st.caption("The blue line represents the median outcome, while the gray lines show individual potential paths based on historical volatility.")
                 # Metrics Row
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Current", f"${current_price:,.2f}")
@@ -119,6 +82,23 @@ with st.expander("View 1-Year Monte Carlo Simulation"):
                 col3.metric("6-Month", f"${price_6m:,.2f}", get_delta_text(price_6m, current_price))
                 col4.metric("1-Year", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
                 
+                # Monte Carlo Simulation
+                with st.expander("View 1-Year Monte Carlo Simulation"):
+                    st.write("### 1-Year Monte Carlo Projection")
+                    returns = prophet_df['y'].pct_change().dropna()
+                    mu, sigma = returns.mean(), returns.std()
+                    days, sims = 252, 500
+                    daily_returns = np.random.normal(mu, sigma, (days, sims))
+                    price_paths = current_price * (1 + daily_returns).cumprod(axis=0)
+                    median_path = np.median(price_paths, axis=1)
+                    
+                    fig_mc = go.Figure()
+                    for i in range(50):
+                        fig_mc.add_trace(go.Scatter(x=list(range(days)), y=price_paths[:, i], line=dict(color='lightgray', width=1), showlegend=False))
+                    fig_mc.add_trace(go.Scatter(x=list(range(days)), y=median_path, line=dict(color='blue', width=3), name='Median (50%) Path'))
+                    fig_mc.update_layout(template="plotly_white", xaxis_title="Days", yaxis_title="Price")
+                    st.plotly_chart(fig_mc, use_container_width=True)
+
                 # Sentiment
                 news_items = yf.Search(ticker).news
                 valid_news = [item for item in news_items if item.get('title')]
@@ -149,20 +129,4 @@ with st.expander("View 1-Year Monte Carlo Simulation"):
                     summary_df = prophet_df.copy()
                     summary_df['Year'] = summary_df['ds'].dt.year
                     summary_df['Quarter'] = summary_df['ds'].dt.quarter
-                    quarterly = summary_df.groupby(['Year', 'Quarter'])['y'].agg(['mean', 'max', 'min']).reset_index()
-                    quarterly = quarterly.sort_values(by=['Year', 'Quarter'], ascending=[False, False])
-                    quarterly['Period'] = 'Q' + quarterly['Quarter'].astype(str) + ' ' + quarterly['Year'].astype(str)
-                    quarterly = quarterly[['Period', 'mean', 'max', 'min']]
-                    quarterly.columns = ['Period', 'Avg Price', 'High', 'Low']
-                    for col in ['Avg Price', 'High', 'Low']: quarterly[col] = quarterly[col].map('${:,.2f}'.format)
-                    st.dataframe(quarterly, use_container_width=True, hide_index=True)
-
-                # News Section
-                st.write('<h3 style="margin-top: 20px;">Recent Market News</h3>', unsafe_allow_html=True)
-                for item in valid_news[:3]:
-                    link = item.get('link') or item.get('clickThroughUrl') or "#"
-                    st.markdown(f"**{item.get('title')}**")
-                    st.caption(f"Source: {item.get('publisher')} | [Read More]({link})" if link != "#" else f"Source: {item.get('publisher')}")
-
-        except Exception as e:
-            st.error(f"Error: {e}")
+                    quarterly = summary_df.groupby(['Year', 'Quarter'])['y'].
