@@ -109,17 +109,6 @@ if st.button("Generate Forecast"):
             else:
                 st.write("No news data available.")
             
-            # Fundamentals
-            st.markdown("### Financial Metrics")
-            info = ticker_obj.info
-            f1, f2 = st.columns(2)
-            f1.write(f"**P/E Ratio:** {info.get('trailingPE', 'N/A')}")
-            f2.write(f"**Market Cap:** {info.get('marketCap', 0) / 1e9:.2f}B")
-            
-            # Market Pulse
-            st.markdown("### S&P 500 Market Pulse")
-            spy_news = yf.Ticker("SPY").news
-            for item in spy_news[:2]:
-                st.markdown(f"- [{item.get('title')}]({item.get('link')})")
+         
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
