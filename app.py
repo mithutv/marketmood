@@ -80,7 +80,7 @@ if st.button("Generate Forecast") and ticker:
             col4.metric("**1-Year**", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
             
             # Graph
-            st.subheader("#### Price Projection (Prophet Model)")
+            st.subheader("### Price Projection (Prophet Model)")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
             fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='1-Year Forecast', line=dict(color='#0000FF', dash='dash')))
@@ -134,16 +134,18 @@ if st.button("Generate Forecast") and ticker:
                 st.markdown(f"**{item.get('title')}**")
                 st.caption(f"Source: {item.get('publisher')} | [Read More]({link})")
 
-            # --- MONTE CARLO SIMULATION SECTION ---
+           # --- MONTE CARLO SIMULATION SECTION ---
             st.header("Probabilistic Projection: Monte Carlo Simulation")
-            with st.expander("View 1-Year Monte Carlo Simulation Details"):
+            with st.expander("View 1000-Day Monte Carlo Simulation Details"):
                 st.write("""
                 **Understanding This Chart:**
                 * **The Gray Cloud:** Represents 500 different possible price paths based on the stock's historical volatility. 
                 * **The Blue Line (Median):** The 50th percentile outcome.
-                * **Risk Assessment:** This tool does not predict the future; it shows the **range of probability**.
+                * **1000-Day Outlook:** This projects the potential price range over the next ~4 years.
                 """)
-                def run_monte_carlo(prices, days=252, sims=500):
+                
+                # Simulation Function (1000 Days)
+                def run_monte_carlo(prices, days=1000, sims=500):
                     returns = prices.pct_change().dropna()
                     mu, sigma = returns.mean(), returns.std()
                     daily_returns = np.random.normal(mu, sigma, (days, sims))
@@ -151,13 +153,24 @@ if st.button("Generate Forecast") and ticker:
 
                 price_paths = run_monte_carlo(prophet_df['y'])
                 median_path = np.median(price_paths, axis=1)
+                
+                # Plotting
                 fig_mc = go.Figure()
-                for i in range(50):
-                    fig_mc.add_trace(go.Scatter(x=list(range(252)), y=price_paths[:, i], line=dict(color='lightgray', width=1), showlegend=False))
-                fig_mc.add_trace(go.Scatter(x=list(range(252)), y=median_path, line=dict(color='blue', width=3), name='Median (50%) Path'))
+                for i in range(50): 
+                    fig_mc.add_trace(go.Scatter(x=list(range(1000)), y=price_paths[:, i], 
+                                                 line=dict(color='lightgray', width=1), showlegend=False))
+                
+                fig_mc.add_trace(go.Scatter(x=list(range(1000)), y=median_path, 
+                                             line=dict(color='blue', width=3), name='Median (50%) Path'))
+                
                 fig_mc.update_layout(template="plotly_white", xaxis_title="Trading Days", yaxis_title="Projected Price")
                 st.plotly_chart(fig_mc, use_container_width=True)
-                st.caption("Each gray line is a 'random walk' based on past performance.")
+                
+                # Data Readout
+                median_final_price = median_path[-1]
+                st.metric("Median Projected Price (1000 Days)", f"${median_final_price:,.2f}")
+                st.caption(f"At day 1000, the median projected price is ${median_final_price:,.2f}. Note: This is a probabilistic estimate based on {len(prophet_df)} days of historical data.")
+
     
     except Exception as e:
         st.error(f"Error: {e}")
