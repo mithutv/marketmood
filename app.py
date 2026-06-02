@@ -74,37 +74,45 @@ if st.button("Generate Forecast") and ticker:
             forecast_1y = m.predict(m.make_future_dataframe(periods=365))
             price_30, price_1y = forecast_30['yhat'].iloc[-1], forecast_1y['yhat'].iloc[-1]
 
-            # Metrics
+            # --- ROW 1: METRICS ---
+            st.subheader(f"Dashboard Summary: {ticker}")
             cols = st.columns(3)
             cols[0].metric("Current Price", f"${current_price:,.2f}")
             cols[1].metric("30-Day Prophet", f"${price_30:,.2f}")
             cols[2].metric("1-Year Prophet", f"${price_1y:,.2f}")
+            st.divider()
 
-            # Side-by-Side: Trend vs Pattern
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown("#### Trend Projection (Prophet)")
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual'))
-                fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='Forecast'))
-                st.plotly_chart(fig, use_container_width=True)
-            with c2:
-                st.markdown("#### Pattern Predictor (ML)")
-                ml_df = prophet_df.copy()
-                ml_df['SMA_20'] = ml_df['y'].rolling(window=20).mean()
-                delta = ml_df['y'].diff()
-                gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-                loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-                ml_df['RSI'] = 100 - (100 / (1 + gain / loss))
-                ml_df = ml_df.dropna()
-                X, y = ml_df[['SMA_20', 'RSI']].iloc[:-1], ml_df['y'].shift(-1).dropna()
-                model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-                pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
+            # --- ROW 2: TREND PROJECTION (Full Width) ---
+            st.markdown("#### 📈 Trend Projection (Prophet)")
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual'))
+            fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='Forecast'))
+            fig.update_layout(height=400, margin=dict(l=20, r=20, t=20, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+            st.divider()
+
+            # --- ROW 3: PATTERN PREDICTOR (Split Row) ---
+            st.markdown("#### 🤖 Pattern Predictor (ML)")
+            ml_col1, ml_col2 = st.columns([1, 2])
+            ml_df = prophet_df.copy()
+            ml_df['SMA_20'] = ml_df['y'].rolling(window=20).mean()
+            delta = ml_df['y'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            ml_df['RSI'] = 100 - (100 / (1 + gain / loss))
+            ml_df = ml_df.dropna()
+            X, y = ml_df[['SMA_20', 'RSI']].iloc[:-1], ml_df['y'].shift(-1).dropna()
+            model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+            pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
+            
+            with ml_col1:
                 st.metric("ML Next Day Projection", f"${pred:,.2f}")
-                st.caption("Random Forest Model based on 20-day SMA and RSI.")
+            with ml_col2:
+                st.write("The Random Forest model evaluates the 20-day Simple Moving Average and RSI to detect short-term price pattern shifts.")
+            st.divider()
 
-            # Monte Carlo
-            st.header("Probabilistic Projection: Monte Carlo")
+            # --- ROW 4: MONTE CARLO ---
+            st.markdown("#### 🎲 Probabilistic Projection (Monte Carlo)")
             def run_mc(prices, days=1000):
                 returns = prices.pct_change().dropna()
                 daily = np.random.normal(returns.mean(), returns.std(), (days, 50))
@@ -113,6 +121,7 @@ if st.button("Generate Forecast") and ticker:
             paths = run_mc(prophet_df['y'])
             fig_mc = go.Figure()
             for i in range(50): fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=1), showlegend=False))
+            fig_mc.update_layout(height=400)
             st.plotly_chart(fig_mc, use_container_width=True)
 
     except Exception as e:
