@@ -6,7 +6,7 @@ from prophet import Prophet
 from streamlit_searchbox import st_searchbox
 
 # --- GLOBAL STYLES ---
-st.set_page_config(page_title="QuantLens", layout="centered")
+st.set_page_config(page_title="Market Mood", layout="centered")
 st.markdown("""
     <style>
     [data-testid="stDataFrame"] thead tr th {
@@ -57,7 +57,6 @@ def get_stock_data(ticker):
 
 # --- FORECAST LOGIC ---
 if st.button("Generate Forecast"):
-    ticker_obj = yf.Ticker(ticker)
     try:
         # 1. Fetch Data
         df = get_stock_data(ticker)
@@ -69,13 +68,13 @@ if st.button("Generate Forecast"):
             df.columns = df.columns.get_level_values(0) if isinstance(df.columns, pd.MultiIndex) else df.columns
             target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
             prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
+            
+            # Clean the data
             prophet_df = prophet_df.dropna()
             prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
             
-            # --- NEW: GET CURRENT PRICE ---
-            # Fetching real-time price from the ticker object
-            ticker_info = ticker_obj.info
-            current_price = ticker_info.get('regularMarketPrice') or ticker_info.get('currentPrice') or prophet_df['y'].iloc[-1]
+            # Use the most recent price from our data to avoid API rate limits
+            current_price = prophet_df['y'].iloc[-1]
             
             # 3. Prophet Engine
             m = Prophet(daily_seasonality=True).fit(prophet_df)
@@ -83,13 +82,12 @@ if st.button("Generate Forecast"):
             
             # 4. Metrics Calculation
             forecasted_price = forecast['yhat'].iloc[-1]
-            delta = forecasted_price - current_price # Using real-time current_price here
+            delta = forecasted_price - current_price
             trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
             
             # 5. UI Output
-            # Displaying both prices
             col1, col2 = st.columns(2)
-            col1.metric("Current Market Price", f"${current_price:,.2f}")
+            col1.metric("Current Price", f"${current_price:,.2f}")
             col2.metric("Forecast Price (30 Days)", f"${forecasted_price:,.2f}", delta=f"{delta:+.2f}")
             
             st.subheader(f"Prediction Trend: {trend_emoji}")
@@ -103,16 +101,13 @@ if st.button("Generate Forecast"):
             fig.update_layout(title=f"Price Forecast for {ticker}", template="plotly_white")
             st.plotly_chart(fig, use_container_width=True)
             
-            # --- ADD SUMMARY HERE ---
+            # --- SUMMARY ---
             st.markdown("### Forecast Summary")
-            growth_pct = ((forecasted_price - latest_price) / latest_price) * 100
+            growth_pct = ((forecasted_price - current_price) / current_price) * 100
             summary_text = f"""
             Based on the analysis of historical price patterns, the model suggests a {trend_emoji} trend. 
             The projected price 30 days from now is **${forecasted_price:,.2f}**, which represents 
-            a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${latest_price:,.2f}**.
-            
-            *Note: The shaded area in the chart represents the confidence interval, indicating the range 
-            of potential price variance based on historical volatility.*
+            a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${current_price:,.2f}**.
             """
             st.info(summary_text)
             
@@ -122,18 +117,6 @@ if st.button("Generate Forecast"):
             display_df.columns = ['Date', 'Closing Price']
             st.markdown(f"### Historical Data for {ticker}")
             st.dataframe(display_df, use_container_width=True, hide_index=True, height=400)
-            
-            # 8. News Section
-            st.markdown("### Recent Market News")
-            news = getattr(ticker_obj, 'news', [])
-            valid_news = [item for item in news if item.get('title')]
-            
-            if valid_news:
-                for item in valid_news[:3]:
-                    st.markdown(f"**{item.get('title')}**")
-                    st.caption(f"Source: {item.get('publisher')} | [Read More]({item.get('link')})")
-            else:
-                st.info("No recent news headlines are currently available for this ticker.")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
