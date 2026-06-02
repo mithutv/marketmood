@@ -66,28 +66,33 @@ if st.button("Generate Forecast"):
             st.error("No data found for this ticker.")
         else:
             # 2. Data Preparation
-            # Flatten columns if MultiIndex exists, select target column dynamically
             df.columns = df.columns.get_level_values(0) if isinstance(df.columns, pd.MultiIndex) else df.columns
             target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
             prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
-            
-            # Clean the data
             prophet_df = prophet_df.dropna()
             prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
+            
+            # --- NEW: GET CURRENT PRICE ---
+            # Fetching real-time price from the ticker object
+            ticker_info = ticker_obj.info
+            current_price = ticker_info.get('regularMarketPrice') or ticker_info.get('currentPrice') or prophet_df['y'].iloc[-1]
             
             # 3. Prophet Engine
             m = Prophet(daily_seasonality=True).fit(prophet_df)
             forecast = m.predict(m.make_future_dataframe(periods=30))
             
             # 4. Metrics Calculation
-            latest_price = prophet_df['y'].iloc[-1]
             forecasted_price = forecast['yhat'].iloc[-1]
-            delta = forecasted_price - latest_price
-            trend_emoji = "📈 (Bullish)" if forecasted_price > latest_price else "📉 (Bearish)"
+            delta = forecasted_price - current_price # Using real-time current_price here
+            trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
             
             # 5. UI Output
+            # Displaying both prices
+            col1, col2 = st.columns(2)
+            col1.metric("Current Market Price", f"${current_price:,.2f}")
+            col2.metric("Forecast Price (30 Days)", f"${forecasted_price:,.2f}", delta=f"{delta:+.2f}")
+            
             st.subheader(f"Prediction Trend: {trend_emoji}")
-            st.metric(label="Forecast Price (30 Days)", value=f"${forecasted_price:,.2f}", delta=f"{delta:+.2f}")
             
             # 6. Graph
             fig = go.Figure()
