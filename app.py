@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from prophet import Prophet
 
 # --- GLOBAL STYLES ---
-st.set_page_config(page_title="QuantLens", layout="wide")
+st.set_page_config(page_title="QuantLens", layout="centered")
 st.markdown("""
     <style>
     [data-testid="stDataFrame"] thead tr th {
