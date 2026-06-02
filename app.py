@@ -82,14 +82,7 @@ if st.button("Generate Forecast") and ticker:
             cols[2].metric("1-Year Prophet", f"${price_1y:,.2f}")
             st.divider()
 
-           To provide a deeper level of insight for your users, we can add a summary section below each graph. This transforms your dashboard from a simple visualization tool into an analytical report.
 
-Here is the updated layout for the Prophet and Monte Carlo sections, including the statistical summaries:
-
-Updated Layout Code
-Replace the relevant sections in your app.py with this logic:
-
-Python
             # --- ROW 2: TREND PROJECTION (Prophet) ---
             st.markdown("#### 📈 Trend Projection (Prophet)")
             fig = go.Figure()
