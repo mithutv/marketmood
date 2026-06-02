@@ -122,11 +122,20 @@ if st.button("Generate Forecast"):
             
             # Graph
             fig = go.Figure()
+            # The forecast object spans the future 30 days
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'))
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(0, 0, 255, 0.1)', name='Confidence Interval'))
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Forecast', line=dict(color='#0000FF')))
+            
+            # This 'Actual' trace is already restricted to the 4-year limit by 'prophet_df'
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
-            fig.update_layout(title=f"Price Forecast for {ticker}", template="plotly_white")
+            
+            fig.update_layout(
+                title=f"Price Forecast for {ticker} (Last 4 Years)", 
+                template="plotly_white",
+                xaxis_title="Date",
+                yaxis_title="Price"
+            )
             st.plotly_chart(fig, use_container_width=True)
             
             # Summary
