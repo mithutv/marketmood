@@ -99,17 +99,18 @@ if st.button("Generate Forecast") and ticker:
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-            rs = gain / loss.replace(0, 0.001) # Avoid division by zero
+            rs = gain / loss.replace(0, 0.001) 
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            # Keep data even if some indicators are NaN initially
-            ml_df = ml_df.fillna(method='bfill').dropna() 
+            # MODERN PANDAS FIX: Use .bfill() instead of fillna(method='bfill')
+            ml_df = ml_df.bfill()
+            ml_df = ml_df.dropna()
             
-            if len(ml_df) > 30: # Ensure we have enough data
+            if len(ml_df) > 30: 
                 X = ml_df[['SMA_20', 'RSI']].iloc[:-1]
                 y = ml_df['y'].shift(-1).dropna()
                 
-                # Align X and y lengths
+                # Align lengths
                 X = X.iloc[:len(y)]
                 
                 model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
@@ -119,8 +120,9 @@ if st.button("Generate Forecast") and ticker:
                 ml_col1.metric("ML Next Day Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
                 ml_col2.caption("Random Forest Model based on 20-day SMA and RSI.")
             else:
-                st.warning("Insufficient data to train ML model. Try a ticker with longer history.")
+                st.warning("Insufficient data to train ML model.")
             st.divider()
+            
 
             # --- ROW 4: MONTE CARLO ---
             st.markdown("#### Probabilistic Projection: Monte Carlo")
