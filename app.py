@@ -128,7 +128,7 @@ if st.button("Generate Forecast"):
 
 
 
-            # 8. News Section & Sentiment Analysis
+           # 8. News Section & Sentiment Analysis
             st.markdown("### Recent Market News")
             
             search = yf.Search(ticker)
@@ -167,7 +167,8 @@ if st.button("Generate Forecast"):
                     gauge_color = "#9E9E9E" # Gray
                     status_label = "⚪ Neutral"
 
-              gauge_html = f"""
+                # --- 4. Render Gauge ---
+                gauge_html = f"""
                 <style>
                 .gauge-container {{ width: 100%; max-width: 400px; margin: 20px auto; font-family: sans-serif; text-align: center; }}
                 .gauge-base {{ position: relative; width: 100%; height: 30px; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; }}
@@ -195,6 +196,8 @@ if st.button("Generate Forecast"):
                 </div>
                 """
                 st.markdown(gauge_html, unsafe_allow_html=True)
+            else:
+                st.info("No recent news headlines available.")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
