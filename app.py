@@ -132,13 +132,22 @@ if st.button("Generate Forecast"):
             search = yf.Search(ticker)
             news = search.news
 
-            if news:
-                # Process the news list (it is usually a list of dictionaries)
-                for item in news[:3]:
+            if valid_news:
+                sentiment_scores = []
+                for item in valid_news[:3]:
+                    # 1. Analyze Sentiment
+                    analysis = TextBlob(item.get('title'))
+                    sentiment_scores.append(analysis.sentiment.polarity)
+                    
+                    # 2. Get Link (Check multiple common keys)
+                    link = item.get('link') or item.get('clickThroughUrl') or "#"
+                    
+                    # 3. Display news with links
                     st.markdown(f"**{item.get('title')}**")
-                    st.caption(f"Source: {item.get('publisher')}")
-            else:
-                    st.info("No news found via Search API. Trying Ticker object...")
+                    if link != "#":
+                        st.caption(f"Source: {item.get('publisher')} | [Read More]({link})")
+                    else:
+                        st.caption(f"Source: {item.get('publisher')} (No link available)")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
