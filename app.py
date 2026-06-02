@@ -53,7 +53,7 @@ selected_ticker = st_searchbox(
     placeholder="Start typing a company name (e.g., Costco)...",
     label="Search for a Company"
 )
-
+from textblob import TextBlob
 ticker = selected_ticker  # It will be None until the user searches
 if ticker:
     st.write(f"### Selected Ticker: {ticker}")
