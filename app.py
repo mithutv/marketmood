@@ -60,11 +60,7 @@ if st.button("Generate Forecast") and ticker:
             prophet_df = prophet_df[prophet_df['ds'] >= four_years_ago].dropna()
             current_price = prophet_df['y'].iloc[-1]
             
-            It seems when re-integrating the new sections, the specific forecast metrics for the 6-month and 1-year windows were accidentally pruned.
 
-I have restored them into the Metrics Row below, along with the Prophet engine logic. Please use this updated code block for your metrics and the Prophet graph:
-
-Python
                 # --- PROPHET FORECASTING & METRICS ---
                 m = Prophet(daily_seasonality=True).fit(prophet_df)
                 
