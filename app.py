@@ -51,18 +51,15 @@ ticker = st_searchbox(search_tickers, placeholder="Enter symbol or company name 
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker): 
-    return yf.download(ticker, period="5y", auto_adjust=False)
+    return yf.download(ticker, period="5y", threads=False, multi_level_index=False)
 
 if st.button("Generate Forecast") and ticker:
     try:
         df = get_stock_data(ticker)
-        if df.empty or 'High' not in df.columns or 'Low' not in df.columns:
-            st.error("Error: Could not retrieve full OHLC data for this ticker.")
+        if df.empty:
+            st.error("No data found.")
         else:
-            # Flatten multi-index if necessary
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(0)
-       
+            df.columns = df.columns.get_level_values(0) if isinstance(df.columns, pd.MultiIndex) else df.columns
             target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
             prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
             prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
@@ -106,7 +103,6 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-       
           # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
@@ -119,57 +115,45 @@ if st.button("Generate Forecast") and ticker:
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            # 2. Enhanced Features
-            # Accessing High/Low directly from the original 'df' 
+            # 2. Enhanced Features (Volatility, Fundamentals, Sentiment)
             ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
+            ticker_info = yf.Ticker(ticker).info
+            ml_df['PE_Ratio'] = ticker_info.get('trailingPE', 20)
             
-            ticker_obj = yf.Ticker(ticker)
-            info = ticker_obj.info
-            ml_df['PE_Ratio'] = info.get('trailingPE') or info.get('forwardPE') or 20.0
+            news = yf.Ticker(ticker).news
+            ml_df['Sentiment'] = TextBlob(news[0]['title']).sentiment.polarity if (news and isinstance(news, list) and len(news) > 0 and 'title' in news[0]) else 0
             
-            news = ticker_obj.news
-            if news and isinstance(news, list) and len(news) > 0:
-                scores = [TextBlob(n.get('title', '')).sentiment.polarity for n in news[:5]]
-                ml_df['Sentiment'] = np.mean(scores)
-            else:
-                ml_df['Sentiment'] = 0.0
-            
+            # 3. Clean data (fill missing values instead of dropping)
             ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
-            ml_df[features] = ml_df[features].fillna(0)
-
-            days_ahead = 252 
-            if len(ml_df) > days_ahead: 
-                # Align X and y correctly
-                X = ml_df[features].iloc[:-days_ahead]
-                y = ml_df['y'].shift(-days_ahead).dropna()
-                X = X.iloc[:len(y)] # Ensure X matches y length
-                
-                if not X.empty and not y.empty:
+            
+            if ml_df['SMA_20'].isnull().all():
+                st.error("Error: ML feature calculation returned empty values.")
+            else:
+                days_ahead = 252 
+                # Ensure we have enough history to train for 1-year ahead
+                if len(ml_df) > days_ahead: 
+                    X = ml_df[features].iloc[:-days_ahead]
+                    y = ml_df['y'].shift(-days_ahead).dropna()
+                    X = X.iloc[:len(y)]
+                    
+                    # Train model and predict
                     model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
                     pred = model.predict(ml_df[features].iloc[[-1]])[0]
                     
+                    # Feature Importance
                     st.write("### Model Insight: What drives this prediction?")
                     importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
                     importances = importances.sort_values(by='Importance', ascending=False)
                     st.bar_chart(importances.set_index('Feature'))
                     
+                    # Display Metric
                     ml_col1, ml_col2 = st.columns([1, 2])
                     ml_col1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                    ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead.")
+                    ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead based on technicals, sentiment, and fundamentals.")
                 else:
-                    st.warning("Insufficient data alignment for ML training.")
-            else:
-                st.warning("Insufficient historical data to train 1-year ML model.")
+                    st.warning("Insufficient historical data to train 1-year ML model.")
             
-            with st.expander("🧠 View Methodology & Logic"):
-                st.markdown("""
-                ### Why Random Forest?
-                Financial markets are non-linear, high-noise environments. Unlike linear regression, which assumes simple proportional relationships, **Random Forest** builds an ensemble of decision trees to identify complex market behaviors. This allows the model to learn conditional logic—for example, how the significance of an RSI signal changes based on market volatility (ATR) or news sentiment.
-                
-                ### Explainable AI
-                My implementation uses **Feature Importance** analysis to turn the model from a "black box" into an explainable tool. This identifies which features—technical indicators, fundamentals (P/E), or news sentiment—are currently driving the prediction.
-                """)
             st.divider()
 
             # --- ROW 4: MONTE CARLO ---
