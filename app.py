@@ -119,15 +119,14 @@ if st.button("Generate Forecast") and ticker:
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            # 2. Enhanced Features (Volatility, Fundamentals, Sentiment)
+            # 2. Enhanced Features
+            # Accessing High/Low directly from the original 'df' 
             ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
             
-            # Fundamentals: Safely get P/E (trailing, forward, or fallback)
             ticker_obj = yf.Ticker(ticker)
             info = ticker_obj.info
             ml_df['PE_Ratio'] = info.get('trailingPE') or info.get('forwardPE') or 20.0
             
-            # Sentiment: Average sentiment of top 5 news items
             news = ticker_obj.news
             if news and isinstance(news, list) and len(news) > 0:
                 scores = [TextBlob(n.get('title', '')).sentiment.polarity for n in news[:5]]
@@ -135,35 +134,34 @@ if st.button("Generate Forecast") and ticker:
             else:
                 ml_df['Sentiment'] = 0.0
             
-            # 3. Clean and verify
             ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
-            
-            # Diagnostic: Ensure features aren't empty
-            if ml_df[features].isnull().values.any():
-                ml_df[features] = ml_df[features].fillna(0)
+            ml_df[features] = ml_df[features].fillna(0)
 
             days_ahead = 252 
             if len(ml_df) > days_ahead: 
+                # Align X and y correctly
                 X = ml_df[features].iloc[:-days_ahead]
                 y = ml_df['y'].shift(-days_ahead).dropna()
-                X = X.iloc[:len(y)]
+                X = X.iloc[:len(y)] # Ensure X matches y length
                 
-                model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-                pred = model.predict(ml_df[features].iloc[[-1]])[0]
-                
-                st.write("### Model Insight: What drives this prediction?")
-                importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
-                importances = importances.sort_values(by='Importance', ascending=False)
-                st.bar_chart(importances.set_index('Feature'))
-                
-                ml_col1, ml_col2 = st.columns([1, 2])
-                ml_col1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead.")
+                if not X.empty and not y.empty:
+                    model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+                    pred = model.predict(ml_df[features].iloc[[-1]])[0]
+                    
+                    st.write("### Model Insight: What drives this prediction?")
+                    importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
+                    importances = importances.sort_values(by='Importance', ascending=False)
+                    st.bar_chart(importances.set_index('Feature'))
+                    
+                    ml_col1, ml_col2 = st.columns([1, 2])
+                    ml_col1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
+                    ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead.")
+                else:
+                    st.warning("Insufficient data alignment for ML training.")
             else:
                 st.warning("Insufficient historical data to train 1-year ML model.")
             
-            # Add methodology expander
             with st.expander("🧠 View Methodology & Logic"):
                 st.markdown("""
                 ### Why Random Forest?
