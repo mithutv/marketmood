@@ -70,7 +70,11 @@ if st.button("Generate Forecast"):
             prophet_df = df_reset[['Date', 'Close']].rename(columns={'Date': 'ds', 'Close': 'y'})
             
             # --- TABLE: BORDERS, SORTABLE, LEFT ALIGN ---
-            st.subheader(f"Historical Data for {ticker}")
+           st.markdown(f"""
+    <div style="font-size: 24px; font-weight: bold; color: #00008B; margin-top: 20px; margin-bottom: 10px;">
+        Historical Data for {ticker}
+    </div>
+""", unsafe_allow_html=True)
             display_df = prophet_df.copy()
             display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d')
             display_df.columns = ['Date', 'Closing Price']
