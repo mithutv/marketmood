@@ -127,38 +127,40 @@ if st.button("Generate Forecast"):
             st.dataframe(display_df, use_container_width=True, hide_index=True, height=400)
 
 
+           To ensure this code runs without errors, we need to calculate avg_sentiment before we try to use it to generate the normalized_score and gauge_html.
+
+Here is the corrected, clean version of your news and gauge section:
+
+Python
             # 8. News Section & Sentiment Analysis
             st.markdown("### Recent Market News")
             
-            # Use yf.Search as it is often more reliable for news
             search = yf.Search(ticker)
             news_items = search.news 
-            
-            # Filter to ensure we only process items with a title
             valid_news = [item for item in news_items if item.get('title')]
             
             if valid_news:
                 sentiment_scores = []
+                
+                # --- 1. Display Headlines ---
                 for item in valid_news[:3]:
-                    # 1. Analyze Sentiment
                     analysis = TextBlob(item.get('title'))
                     sentiment_scores.append(analysis.sentiment.polarity)
                     
-                    # 2. Get Link (Check multiple common keys)
                     link = item.get('link') or item.get('clickThroughUrl') or "#"
                     
-                    # 3. Display news with links
                     st.markdown(f"**{item.get('title')}**")
                     if link != "#":
                         st.caption(f"Source: {item.get('publisher')} | [Read More]({link})")
                     else:
-                        st.caption(f"Source: {item.get('publisher')} (No link available)")
+                        st.caption(f"Source: {item.get('publisher')}")
                 
-                # 4. Sentiment Summary
-                # Normalize the score from [-1, 1] to [0, 100] for the CSS gauge
+                # --- 2. Calculate Sentiment ---
+                avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
+                
+                # --- 3. Determine Gauge Visuals ---
                 normalized_score = (avg_sentiment + 1) * 50
                 
-                # Determine color and dynamic emoji label
                 if avg_sentiment > 0.1:
                     gauge_color = "#4CAF50" # Green
                     status_label = "🟢 Bullish"
@@ -169,61 +171,24 @@ if st.button("Generate Forecast"):
                     gauge_color = "#9E9E9E" # Gray
                     status_label = "⚪ Neutral"
 
-                # Define the HTML and CSS for the gauge visualization
+                # --- 4. Render Gauge ---
                 gauge_html = f"""
                 <style>
-                .gauge-container {{
-                    width: 100%;
-                    max-width: 400px;
-                    margin: 20px auto;
-                    font-family: sans-serif;
-                    text-align: center;
-                }}
-                .gauge-base {{
-                    position: relative;
-                    width: 100%;
-                    height: 50px;
-                    background-color: #e0e0e0;
-                    border-radius: 25px;
-                    overflow: hidden;
-                    box-shadow: inset 0px 2px 5px rgba(0,0,0,0.1);
-                }}
-                .gauge-fill {{
-                    height: 100%;
-                    background-color: {gauge_color};
-                    width: {normalized_score}%;
-                    border-radius: 25px;
-                    transition: width 0.5s ease-in-out;
-                }}
-                .gauge-labels {{
-                    display: flex;
-                    justify-content: space-between;
-                    margin-top: 8px;
-                    font-size: 0.85rem;
-                    color: #666;
-                }}
-                .gauge-center-label {{
-                    font-weight: bold;
-                    font-size: 1.1rem;
-                    margin-top: 10px;
-                    color: {gauge_color};
-                }}
+                .gauge-container {{ width: 100%; max-width: 400px; margin: 20px auto; font-family: sans-serif; text-align: center; }}
+                .gauge-base {{ position: relative; width: 100%; height: 30px; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; }}
+                .gauge-fill {{ height: 100%; background-color: {gauge_color}; width: {normalized_score}%; border-radius: 15px; transition: width 0.5s ease-in-out; }}
+                .gauge-labels {{ display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: #666; }}
+                .gauge-center-label {{ font-weight: bold; font-size: 1.1rem; margin-top: 10px; color: {gauge_color}; }}
                 </style>
                 <div class="gauge-container">
-                    <h3>Aggregate Sentiment Score</h3>
-                    <div class="gauge-base">
-                        <div class="gauge-fill"></div>
-                    </div>
+                    <h3>Market Sentiment Gauge</h3>
+                    <div class="gauge-base"><div class="gauge-fill"></div></div>
                     <div class="gauge-labels">
-                        <span>🔴 Bearish (-1)</span>
-                        <span>⚪ Neutral (0)</span>
-                        <span>🟢 Bullish (+1)</span>
+                        <span>🔴 -1</span><span>⚪ 0</span><span>🟢 +1</span>
                     </div>
-                    <div class="gauge-center-label">{status_label} | Score: {avg_sentiment:.2f}</div>
+                    <div class="gauge-center-label">{status_label} ({avg_sentiment:.2f})</div>
                 </div>
                 """
-                
-                # Render the gauge
                 st.markdown(gauge_html, unsafe_allow_html=True)
 
             else:
