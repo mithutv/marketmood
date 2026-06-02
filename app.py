@@ -90,18 +90,8 @@ if st.button("Generate Forecast") and ticker:
             cols[3].metric("1-Year", f"${price_1y:,.2f}", f"{delta_1y:+.2f}")
             st.divider()
 
-            # --- ROW 1: METRICS ---
-            # Calculate metrics
-            delta_30 = price_30 - current_price
-            delta_6m = price_6m - current_price
-            delta_1y = price_1y - current_price
-
-            cols = st.columns(4)
-            cols[0].metric("Current Price", f"${current_price:,.2f}")
-            cols[1].metric("30-Day", f"${price_30:,.2f}", f"{delta_30:+.2f}")
-            cols[2].metric("6-Month", f"${price_6m:,.2f}", f"{delta_6m:+.2f}")
-            cols[3].metric("1-Year", f"${price_1y:,.2f}", f"{delta_1y:+.2f}")
-            st.divider()
+           
+     
 
             # --- ROW 2: TREND PROJECTION ---
             st.markdown("#### Trend Projection (Prophet)")
