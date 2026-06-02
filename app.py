@@ -129,9 +129,14 @@ if st.button("Generate Forecast"):
 
             # 8. News Section & Sentiment Analysis
             st.markdown("### Recent Market News")
+            
+            # Use yf.Search as it is often more reliable for news
             search = yf.Search(ticker)
-            news = search.news
-
+            news_items = search.news 
+            
+            # Filter to ensure we only process items with a title
+            valid_news = [item for item in news_items if item.get('title')]
+            
             if valid_news:
                 sentiment_scores = []
                 for item in valid_news[:3]:
@@ -148,6 +153,13 @@ if st.button("Generate Forecast"):
                         st.caption(f"Source: {item.get('publisher')} | [Read More]({link})")
                     else:
                         st.caption(f"Source: {item.get('publisher')} (No link available)")
+                
+                # 4. Sentiment Summary
+                avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
+                label = "🟢 Bullish" if avg_sentiment > 0.1 else ("🔴 Bearish" if avg_sentiment < -0.1 else "⚪ Neutral")
+                st.metric("Aggregate Sentiment Score", f"{avg_sentiment:.2f}", label)
+            else:
+                st.info("No recent news headlines available.")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
