@@ -6,6 +6,7 @@ from prophet import Prophet
 from streamlit_searchbox import st_searchbox
 import nltk
 from textblob import TextBlob
+import numpy as np
 
 try:
     nltk.data.find('tokenizers/punkt')
@@ -75,6 +76,42 @@ if st.button("Generate Forecast"):
                 def get_delta_text(forecasted, current):
                     return f"{forecasted - current:+.2f}"
 
+                # --- MONTE CARLO SECTION ---
+with st.expander("View 1-Year Monte Carlo Simulation"):
+    st.write("### 1-Year Monte Carlo Projection")
+    st.write("Simulating 500 possible future price paths based on 4 years of volatility.")
+    
+    # Calculate daily returns
+    returns = prophet_df['y'].pct_change().dropna()
+    mu = returns.mean()
+    sigma = returns.std()
+    
+    # Simulation parameters
+    days = 252
+    simulations = 500
+    last_price = prophet_df['y'].iloc[-1]
+    
+    # Generate random paths
+    daily_returns = np.random.normal(mu, sigma, (days, simulations))
+    price_paths = last_price * (1 + daily_returns).cumprod(axis=0)
+    
+    # Calculate percentiles
+    median_path = np.median(price_paths, axis=1)
+    
+    # Plotting
+    fig_mc = go.Figure()
+    # Plot a subset of paths to keep it performant
+    for i in range(50):
+        fig_mc.add_trace(go.Scatter(x=list(range(days)), y=price_paths[:, i], 
+                                     line=dict(color='lightgray', width=1), showlegend=False))
+    
+    # Plot the median (50%) path
+    fig_mc.add_trace(go.Scatter(x=list(range(days)), y=median_path, 
+                                 line=dict(color='blue', width=3), name='Median (50%) Path'))
+    
+    fig_mc.update_layout(template="plotly_white", xaxis_title="Days", yaxis_title="Price")
+    st.plotly_chart(fig_mc, use_container_width=True)
+    st.caption("The blue line represents the median outcome, while the gray lines show individual potential paths based on historical volatility.")
                 # Metrics Row
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Current", f"${current_price:,.2f}")
