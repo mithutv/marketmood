@@ -16,7 +16,12 @@ st.markdown("""
         font-size: 16px;
     }
 
-
+    /* Force header labels to center */
+    [data-testid="stDataFrame"] thead tr th div {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
     
     /* Blue Button Styling */
     div.stButton > button:first-child {
