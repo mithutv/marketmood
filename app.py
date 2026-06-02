@@ -79,7 +79,7 @@ if st.button("Generate Forecast"):
                 col3.metric("6-Month", f"${price_6m:,.2f}", get_delta_text(price_6m, current_price))
                 col4.metric("1-Year", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
                 
-                # Monte Carlo Simulation
+               # Monte Carlo Simulation
                 with st.expander("View 1-Year Monte Carlo Simulation"):
                     st.write("### 1-Year Monte Carlo Projection")
                     returns = prophet_df['y'].pct_change().dropna()
@@ -91,5 +91,11 @@ if st.button("Generate Forecast"):
                     
                     fig_mc = go.Figure()
                     for i in range(50):
-                        fig_mc.add_trace(go.Scatter(x=list(range(days)), y=price_paths[:, i], line=dict(color='lightgray', width=1), showlegend=False))
-                    fig_mc.add_trace(go.Scatter(x=list(range(days)), y=median_path, line=dict(color='blue', width=3), name='Median (5
+                        fig_mc.add_trace(go.Scatter(x=list(range(days)), y=price_paths[:, i], 
+                                         line=dict(color='lightgray', width=1), showlegend=False))
+                    
+                    fig_mc.add_trace(go.Scatter(x=list(range(days)), y=median_path, 
+                                     line=dict(color='blue', width=3), name='Median (50%) Path'))
+                    
+                    fig_mc.update_layout(template="plotly_white", xaxis_title="Days", yaxis_title="Price")
+                    st.plotly_chart(fig_mc, use_container_width=True)
