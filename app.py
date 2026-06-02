@@ -103,39 +103,40 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-        # --- ROW 3: PATTERN PREDICTOR (ML) ---
+            # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             
-            # Technical Indicators
-            ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
-            delta = ml_df['y'].diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
-            rs = gain / loss.replace(0, 0.001)
-            ml_df['RSI'] = 100 - (100 / (1 + rs))
-            ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
+            # 1. Technicals
+            ml_df['SMA_20'] = ml_df['y'].rolling(20).mean()
+            # Normalize RSI to 0-1 range
+            ml_df['RSI'] = (100 - (100 / (1 + (ml_df['y'].diff().clip(lower=0).rolling(14).mean() / 
+                            -ml_df['y'].diff().clip(upper=0).rolling(14).mean())))) / 100
             
-            # Rate-Limit Proof Metadata Fetching
-            # We use a try-except block. If Yahoo blocks us, we just skip it 
-            # and use default values so the ML model still functions.
+            # 2. Dynamic Features (Handle potential missing High/Low)
+            if 'High' in df.columns and 'Low' in df.columns:
+                ml_df['ATR'] = (df['High'] - df['Low']).rolling(14).mean() / ml_df['y'] # Normalized ATR
+            else:
+                ml_df['ATR'] = 0.0
+
+            # 3. Dynamic Metadata
             try:
                 ticker_obj = yf.Ticker(ticker)
-                # Fetch only what we need, not the whole 'info' dictionary if possible
+                # Use forward/trailing PE relative to price to give it variance
                 info = ticker_obj.fast_info
-                # Use a very short timeout if possible or just wrap the call
-                ml_df['PE_Ratio'] = info.get('trailingPE') or 20.0
+                pe = info.get('trailingPE') or 20.0
+                ml_df['PE_Ratio'] = pe / 100 # Scaling factor
                 
                 news = ticker_obj.news
-                if news and isinstance(news, list):
-                    scores = [TextBlob(n.get('title', '')).sentiment.polarity for n in news[:3]]
-                    ml_df['Sentiment'] = np.mean(scores)
+                if news:
+                    ml_df['Sentiment'] = np.mean([TextBlob(n.get('title', '')).sentiment.polarity for n in news[:5]])
                 else:
                     ml_df['Sentiment'] = 0.0
             except:
-                # If we get rate limited, this code runs and prevents a crash
-                ml_df['PE_Ratio'] = 20.0
+                ml_df['PE_Ratio'] = 0.2
                 ml_df['Sentiment'] = 0.0
+
+            ml_df = ml_df.fillna(0)
 
             # 3. Clean and Train
             ml_df = ml_df.ffill().bfill()
