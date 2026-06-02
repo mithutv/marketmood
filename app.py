@@ -106,6 +106,21 @@ if st.button("Generate Forecast"):
     }
 )
 
+            # --- Prediction Header ---
+        st.subheader("Price Forecast Analysis")
+
+        # Logic for the trend emoji
+        latest_price = display_df['Closing Price'].iloc[-2]
+forecasted_price = display_df['Closing Price'].iloc[-1]
+delta = forecasted_price - latest_price
+
+# Display as a metric (gives it that "Bloomberg" feel)
+st.metric(
+    label="Forecast Trend", 
+    value=f"${forecasted_price:,.2f}", 
+    delta=f"{delta:+.2f}"
+)
+
             # Prophet Engine
             m = Prophet(daily_seasonality=True).fit(prophet_df)
             forecast = m.predict(m.make_future_dataframe(periods=30))
