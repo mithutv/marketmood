@@ -120,5 +120,12 @@ if st.button("Generate Forecast"):
                     for col in ['Avg Price', 'High', 'Low']: quarterly[col] = quarterly[col].map('${:,.2f}'.format)
                     st.dataframe(quarterly, use_container_width=True, hide_index=True)
 
+                # News Section
+                st.write('<h3 style="margin-top: 20px;">Recent Market News</h3>', unsafe_allow_html=True)
+                for item in valid_news[:3]:
+                    link = item.get('link') or item.get('clickThroughUrl') or "#"
+                    st.markdown(f"**{item.get('title')}**")
+                    st.caption(f"Source: {item.get('publisher')} | [Read More]({link})" if link != "#" else f"Source: {item.get('publisher')}")
+
         except Exception as e:
             st.error(f"Error: {e}")
