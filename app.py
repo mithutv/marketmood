@@ -100,4 +100,35 @@ if st.button("Generate Forecast"):
             
             # --- ADD SUMMARY HERE ---
             st.markdown("### Forecast Summary")
-            growth_pct =
+            growth_pct = ((forecasted_price - latest_price) / latest_price) * 100
+            summary_text = f"""
+            Based on the analysis of historical price patterns, the model suggests a {trend_emoji} trend. 
+            The projected price 30 days from now is **${forecasted_price:,.2f}**, which represents 
+            a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${latest_price:,.2f}**.
+            
+            *Note: The shaded area in the chart represents the confidence interval, indicating the range 
+            of potential price variance based on historical volatility.*
+            """
+            st.info(summary_text)
+            
+            # 7. Historical Table
+            display_df = prophet_df.copy()
+            display_df['ds'] = display_df['ds'].dt.strftime('%b %d, %Y')
+            display_df.columns = ['Date', 'Closing Price']
+            st.markdown(f"### Historical Data for {ticker}")
+            st.dataframe(display_df, use_container_width=True, hide_index=True, height=400)
+            
+            # 8. News Section
+            st.markdown("### Recent Market News")
+            news = getattr(ticker_obj, 'news', [])
+            valid_news = [item for item in news if item.get('title')]
+            
+            if valid_news:
+                for item in valid_news[:3]:
+                    st.markdown(f"**{item.get('title')}**")
+                    st.caption(f"Source: {item.get('publisher')} | [Read More]({item.get('link')})")
+            else:
+                st.info("No recent news headlines are currently available for this ticker.")
+                
+    except Exception as e:
+        st.error(f"Error generating forecast: {e}")
