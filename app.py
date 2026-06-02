@@ -17,9 +17,10 @@ st.markdown("""
     }
 
     /* Center align header text */
-    [data-testid="stDataFrame"] thead tr th div {
-        display: flex;
-        justify-content: center;
+  [data-testid="stDataFrame"] thead tr th {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
     }
     
     /* Blue Button Styling */
