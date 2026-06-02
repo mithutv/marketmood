@@ -5,15 +5,13 @@ import plotly.graph_objects as go
 from prophet import Prophet
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="QuantLens Terminal", layout="centered")
+st.set_page_config(page_title="QuantLens Terminal", layout="wide")
 
-# --- CENTERED STYLES ---
+# --- GLOBAL STYLES ---
 st.markdown("""
     <style>
-    .main { text-align: center; }
-    div.stButton > button:first-child { background-color: #007BFF; color: white; border-radius: 4px; border: none; width: 200px; }
-    .stMetric { background-color: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
-    [data-testid="stMetricValue"] { text-align: center; }
+    div.stButton > button:first-child { background-color: #007BFF; color: white; border-radius: 4px; border: none; }
+    .stMetric { background-color: #f8f9fa; padding: 15px; border-radius: 5px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -47,9 +45,9 @@ if st.button("Generate Forecast"):
             
             st.subheader(f"Analysis: {ticker}")
             c1, c2, c3 = st.columns(3)
-            c1.metric("Current", f"${latest_price:,.2f}")
-            c2.metric("Forecast", f"${forecasted_price:,.2f}", f"{delta:+.2f}")
-            c3.metric("Trend", "Bullish" if delta > 0 else "Bearish")
+            c1.metric("Current Price", f"${latest_price:,.2f}")
+            c2.metric("30-Day Forecast", f"${forecasted_price:,.2f}", f"{delta:+.2f}")
+            c3.metric("Trend Status", "Bullish" if delta > 0 else "Bearish")
 
             # 2. FORECAST GRAPH
             st.subheader("Price Projection")
@@ -81,4 +79,13 @@ if st.button("Generate Forecast"):
             # 5. MARKET CONTEXT
             st.subheader("S&P 500 Market Pulse")
             spy_news = yf.Ticker("SPY").news
-            for item in spy_news[:2
+            for item in spy_news[:2]:
+                st.markdown(f"- [{item.get('title')}]({item.get('link')})")
+
+            # 6. HISTORICAL TABLE
+            st.subheader("Historical Data")
+            display_df = prophet_df.sort_values(by='ds', ascending=False)
+            st.dataframe(display_df.head(10), use_container_width=True)
+
+    except Exception as e:
+        st.error(f"System Error: {e}")
