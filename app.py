@@ -7,7 +7,6 @@ from prophet import Prophet
 # --- GLOBAL STYLES ---
 st.markdown("""
     <style>
-    /* Clean, professional header styling */
     [data-testid="stDataFrame"] thead tr th {
         background-color: #000000;
         color: #FFFFFF;
@@ -18,7 +17,6 @@ st.markdown("""
     [data-testid="stDataFrame"] thead tr th div {
         justify-content: center !important;
     }
-    /* Blue Button Styling */
     div.stButton > button:first-child {
         background-color: #007BFF;
         color: white;
@@ -62,18 +60,14 @@ if st.button("Generate Forecast"):
             delta = forecasted_price - latest_price
             trend_emoji = "📈 (Bullish)" if forecasted_price > latest_price else "📉 (Bearish)"
             
-            # 5. UI Output: Prediction Header & Metric
+            # 5. UI Output
             st.subheader(f"Prediction Trend: {trend_emoji}")
             st.metric(label="Forecast Price (30 Days)", value=f"${forecasted_price:,.2f}", delta=f"{delta:+.2f}")
             
             # 6. Graph with Confidence Interval
             fig = go.Figure()
-
-            # Uncertainty Interval (Shaded Area)
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'))
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(0, 0, 255, 0.1)', name='Confidence Interval'))
-
-            # Forecast and Actual Lines
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Forecast', line=dict(color='#0000FF')))
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
             
@@ -84,18 +78,25 @@ if st.button("Generate Forecast"):
             display_df = prophet_df.copy()
             display_df['ds'] = display_df['ds'].dt.strftime('%b %d, %Y')
             display_df.columns = ['Date', 'Closing Price']
-            
             st.markdown(f"### Historical Data for {ticker}")
-            st.dataframe(
-                display_df, 
-                use_container_width=True, 
-                hide_index=True,
-                height=400,
-                column_config={
-                    "Date": st.column_config.TextColumn("Date", width="medium", alignment="center"),
-                    "Closing Price": st.column_config.NumberColumn("Closing Price", format="$%.2f", alignment="center")
-                }
-            )
+            st.dataframe(display_df, use_container_width=True, hide_index=True, height=400, 
+                         column_config={"Date": st.column_config.TextColumn("Date", alignment="center"), 
+                                        "Closing Price": st.column_config.NumberColumn("Closing Price", format="$%.2f", alignment="center")})
+            
+            # 8. News Sentiment Section (Indented correctly!)
+            st.markdown("### Recent Market News")
+            ticker_obj = yf.Ticker(ticker)
+            news = ticker_obj.news
+            if news:
+                for item in news[:3]:
+                    st.markdown(f"""
+                    <div style="background-color: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <div style="font-weight: bold;">{item.get('title')}</div>
+                        <div style="font-size: 12px; color: #555;">Source: {item.get('publisher')} | <a href="{item.get('link')}" target="_blank">Read More</a></div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.write("No recent news found for this ticker.")
             
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
