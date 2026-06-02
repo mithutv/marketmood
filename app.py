@@ -72,7 +72,7 @@ if st.button("Generate Forecast"):
             
             
             # Table Header
-            st.markdown(f'<div style="font-size: 20px; font-weight: bold; color: #00008B; margin-top: 20px;">Historical Data for {ticker}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size: 24px; font-weight: bold; color: #00008B; margin-top: 20px; align: centert;">Historical Data for {ticker}</div>', unsafe_allow_html=True)
             st.dataframe(
     display_df, 
     use_container_width=True, 
