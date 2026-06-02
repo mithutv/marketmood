@@ -61,14 +61,6 @@ if st.button("Generate Forecast"):
                 prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
                 prophet_df = prophet_df[prophet_df['ds'] >= four_years_ago].dropna()
                 current_price = prophet_df['y'].iloc[-1]
-                
-                # Prophet Engine
-                m = Prophet(daily_seasonality=True).fit(prophet_df)
-                forecast = m.predict(m.make_future_dataframe(periods=30))
-                forecasted_price = forecast['yhat'].iloc[-1]
-                delta = forecasted_price - current_price
-                growth_pct = ((forecasted_price - current_price) / current_price) * 100
-                trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
 
                # Prophet Engine
                 m = Prophet(daily_seasonality=True).fit(prophet_df)
