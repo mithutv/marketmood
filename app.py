@@ -32,7 +32,8 @@ if st.button("Generate Forecast"):
             st.subheader(f"Historical Data for {ticker}")
             display_df = prophet_df.copy()
             display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d')
-            display_df.columns = ['Date', 'Closing Price']
+            display_df.columns = ['**Date**', '**Closing Price**']
+            st.table(display_df.head(10))
             st.dataframe(display_df.head(10), use_container_width=True)
 
             # Prophet Engine
