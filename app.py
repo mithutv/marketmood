@@ -24,9 +24,7 @@ st.markdown("""
 
 # --- HEADER ---
 st.title("Market Mood: AI-Driven Financial Forecasting")
-st.markdown("""
-This application analyzes the **last 4 years** of historical price action to provide projections using **Meta's Prophet**. 
-""")
+st.markdown("This application analyzes the **last 4 years** of historical price action to provide projections using **Meta's Prophet**.")
 
 # --- SEARCH BOX ---
 def search_tickers(searchterm: str):
@@ -60,7 +58,6 @@ if st.button("Generate Forecast"):
                 prophet_df = prophet_df[prophet_df['ds'] >= four_years_ago].dropna()
                 current_price = prophet_df['y'].iloc[-1]
 
-                # Prophet Engine
                 m = Prophet(daily_seasonality=True).fit(prophet_df)
                 
                 # Predictions
@@ -95,38 +92,4 @@ if st.button("Generate Forecast"):
                     fig_mc = go.Figure()
                     for i in range(50):
                         fig_mc.add_trace(go.Scatter(x=list(range(days)), y=price_paths[:, i], line=dict(color='lightgray', width=1), showlegend=False))
-                    fig_mc.add_trace(go.Scatter(x=list(range(days)), y=median_path, line=dict(color='blue', width=3), name='Median (50%) Path'))
-                    fig_mc.update_layout(template="plotly_white", xaxis_title="Days", yaxis_title="Price")
-                    st.plotly_chart(fig_mc, use_container_width=True)
-
-                # Sentiment
-                news_items = yf.Search(ticker).news
-                valid_news = [item for item in news_items if item.get('title')]
-                sentiment_scores = [TextBlob(i['title']).sentiment.polarity for i in valid_news[:3]] if valid_news else [0]
-                avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
-                
-                if avg_sentiment > 0.1: gauge_color, status_label = "#4CAF50", "🟢 Bullish"
-                elif avg_sentiment < -0.1: gauge_color, status_label = "#F44336", "🔴 Bearish"
-                else: gauge_color, status_label = "#9E9E9E", "⚪ Neutral"
-
-                st.markdown(f"""
-                <div style="text-align:center; padding: 20px;">
-                    <div style="font-size:1.1rem; font-weight:bold;">Sentiment Score: {avg_sentiment:.2f}</div>
-                    <div style="font-weight:bold; color:{gauge_color}; font-size: 1.5rem;">{status_label}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Graph
-                st.subheader("Price Projection")
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
-                fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='1-Year Forecast', line=dict(color='#0000FF', dash='dash')))
-                fig.update_layout(template="plotly_white")
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Quarterly Table
-                with st.expander("View Quarterly Historical Summary"):
-                    summary_df = prophet_df.copy()
-                    summary_df['Year'] = summary_df['ds'].dt.year
-                    summary_df['Quarter'] = summary_df['ds'].dt.quarter
-                    quarterly = summary_df.groupby(['Year', 'Quarter'])['y'].
+                    fig_mc.add_trace(go.Scatter(x=list(range(days)), y=median_path, line=dict(color='blue', width=3), name='Median (5
