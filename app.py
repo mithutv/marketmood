@@ -106,35 +106,24 @@ if st.button("Generate Forecast") and ticker:
             # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
-            ml_df['SMA_20'] = ml_df['y'].rolling(window=20).mean()
             
-            # Improved RSI calculation
+            # 1. Calculate SMA with min_periods to avoid all-NaN start
+            ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
+            
+            # 2. RSI Calculation
             delta = ml_df['y'].diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-            rs = gain / loss.replace(0, 0.001) 
+            gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
+            rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            # MODERN PANDAS FIX: Use .bfill() instead of fillna(method='bfill')
-            ml_df = ml_df.bfill()
-            ml_df = ml_df.dropna()
+            # 3. Clean up the dataframe
+            ml_df = ml_df.bfill().dropna()
             
-            if len(ml_df) > 30: 
-                X = ml_df[['SMA_20', 'RSI']].iloc[:-1]
-                y = ml_df['y'].shift(-1).dropna()
-                
-                # Align lengths
-                X = X.iloc[:len(y)]
-                
-                model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-                pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
-                
-                ml_col1, ml_col2 = st.columns([1, 2])
-                ml_col1.metric("ML Next Day Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                ml_col2.caption("Random Forest Model based on 20-day SMA and RSI.")
+            # Check if SMA actually has data
+            if ml_df['SMA_20'].isnull().all():
+                st.error("Error: SMA calculation returned empty values. Check your data source.")
             else:
-                st.warning("Insufficient data to train ML model.")
-            st.divider()
             
 
             # --- ROW 4: MONTE CARLO ---
