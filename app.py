@@ -74,35 +74,48 @@ if st.button("Generate Forecast") and ticker:
 
             # Metrics Row
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Current", f"${current_price:,.2f}")
-            col2.metric("30-Day", f"${price_30:,.2f}", get_delta_text(price_30, current_price))
-            col3.metric("6-Month", f"${price_6m:,.2f}", get_delta_text(price_6m, current_price))
-            col4.metric("1-Year", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
+            col1.metric("**Current**", f"${current_price:,.2f}")
+            col2.metric("**30-Day**", f"${price_30:,.2f}", get_delta_text(price_30, current_price))
+            col3.metric("**6-Month**", f"${price_6m:,.2f}", get_delta_text(price_6m, current_price))
+            col4.metric("**1-Year**", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
             
             # Graph
-            st.subheader("Price Projection (Prophet Model)")
+            st.subheader("#### Price Projection (Prophet Model)")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
             fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='1-Year Forecast', line=dict(color='#0000FF', dash='dash')))
             fig.update_layout(template="plotly_white", xaxis_title="Date", yaxis_title="Price")
             st.plotly_chart(fig, use_container_width=True)
         
-            # Sentiment
+            To make the Sentiment Meter as informative as possible, I have combined the progress bar "gauge" with a large, clear numerical display. This approach provides the visual trend (the bar) and the precise data point (the number) in one compact section.
+
+Replace your sentiment block with this:
+
+Python
+            # Sentiment Analysis
             news_items = yf.Search(ticker).news
             valid_news = [item for item in news_items if item.get('title')]
-            avg_sentiment = sum([TextBlob(i['title']).sentiment.polarity for i in valid_news[:3]]) / len(valid_news[:3]) if valid_news else 0
+            sentiment_scores = [TextBlob(i['title']).sentiment.polarity for i in valid_news[:3]] if valid_news else [0]
+            avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
             
-            if avg_sentiment > 0.1: gauge_color, status_label = "#4CAF50", "🟢 Bullish"
-            elif avg_sentiment < -0.1: gauge_color, status_label = "#F44336", "🔴 Bearish"
-            else: gauge_color, status_label = "#9E9E9E", "⚪ Neutral"
+            # Gauge Logic
+            normalized_sentiment = (avg_sentiment + 1) / 2
+            if avg_sentiment > 0.1: status_label = "Bullish"
+            elif avg_sentiment < -0.1: status_label = "Bearish"
+            else: status_label = "Neutral"
 
-            st.markdown(f"""
-            <div style="text-align:center; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                <div style="font-size: 1.2rem; color: #555;">Sentiment Score</div>
-                <div style="font-size: 2.5rem; font-weight: bold; margin: 10px 0;">{avg_sentiment:.2f}</div>
-                <div style="font-weight: bold; color: {gauge_color}; font-size: 1.5rem;">{status_label}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("#### Market Sentiment Gauge")
+            
+            # Display score prominently
+            st.metric(label="Sentiment Score", value=f"{avg_sentiment:.2f}", delta=status_label)
+            
+            # The Sentiment Meter (Progress Bar)
+            st.progress(normalized_sentiment)
+            
+            # Add range labels
+            col_left, col_right = st.columns(2)
+            col_left.caption("Bearish (-1.0)")
+            col_right.caption("Bullish (+1.0)")
 
             # Quarterly Historical Table
             with st.expander("View Quarterly Historical Summary"):
