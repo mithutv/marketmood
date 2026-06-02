@@ -70,8 +70,25 @@ if st.button("Generate Forecast") and ticker:
             # Prophet Logic
             m = Prophet(daily_seasonality=True).fit(prophet_df)
             forecast_30 = m.predict(m.make_future_dataframe(periods=30))
+            forecast_6m = m.predict(m.make_future_dataframe(periods=180)) # Calculate 6-month
             forecast_1y = m.predict(m.make_future_dataframe(periods=365))
-            price_30, price_1y = forecast_30['yhat'].iloc[-1], forecast_1y['yhat'].iloc[-1]
+            
+            # Define the prices
+            price_30 = forecast_30['yhat'].iloc[-1]
+            price_6m = forecast_6m['yhat'].iloc[-1]
+            price_1y = forecast_1y['yhat'].iloc[-1]
+
+            # --- ROW 1: METRICS ---
+            delta_30 = price_30 - current_price
+            delta_6m = price_6m - current_price
+            delta_1y = price_1y - current_price
+
+            cols = st.columns(4)
+            cols[0].metric("Current Price", f"${current_price:,.2f}")
+            cols[1].metric("30-Day", f"${price_30:,.2f}", f"{delta_30:+.2f}")
+            cols[2].metric("6-Month", f"${price_6m:,.2f}", f"{delta_6m:+.2f}")
+            cols[3].metric("1-Year", f"${price_1y:,.2f}", f"{delta_1y:+.2f}")
+            st.divider()
 
             # --- ROW 1: METRICS ---
             # Calculate metrics
