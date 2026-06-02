@@ -139,40 +139,40 @@ if st.button("Generate Forecast") and ticker:
 
 
              # --- MONTE CARLO SIMULATION SECTION ---
-            st.header("Probabilistic Projection: Monte Carlo Simulation")
-            with st.expander("View 1-Year Monte Carlo Simulation Details"):
-                st.write("""
-                **Scope Note:** This simulation estimates price uncertainty by generating 500 potential future 
-                price paths based on the stock's historical volatility ($\sigma$) and average drift ($\mu$) 
-                over the last 4 years.
-                
-                **Analysis:** The blue line represents the 50th percentile (median) outcome, while the 
-                gray cloud illustrates the range of possible volatility-adjusted movements.
-                """)
-                
-                # Simulation Function
-                def run_monte_carlo(prices, days=252, sims=500):
-                    returns = prices.pct_change().dropna()
-                    mu, sigma = returns.mean(), returns.std()
-                    daily_returns = np.random.normal(mu, sigma, (days, sims))
-                    price_paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
-                    return price_paths
-            
-                # Execute
-                price_paths = run_monte_carlo(prophet_df['y'])
-                median_path = np.median(price_paths, axis=1)
-                
-                # Plotting
-                fig_mc = go.Figure()
-                for i in range(50): # Plot 50 paths for visual clarity
-                    fig_mc.add_trace(go.Scatter(x=list(range(252)), y=price_paths[:, i], 
-                                                 line=dict(color='lightgray', width=1), showlegend=False))
-                
-                fig_mc.add_trace(go.Scatter(x=list(range(252)), y=median_path, 
-                                             line=dict(color='blue', width=3), name='Median (50%) Path'))
-                
-                fig_mc.update_layout(template="plotly_white", xaxis_title="Trading Days", yaxis_title="Projected Price")
-                st.plotly_chart(fig_mc, use_container_width=True)
+                st.header("Probabilistic Projection: Monte Carlo Simulation")
+                with st.expander("View 1-Year Monte Carlo Simulation Details"):
+                    st.write("""
+                    **Understanding This Chart:**
+                    * **The Gray Cloud:** Represents 500 different possible price paths based on the stock's historical volatility. The wider the cloud, the more volatile (risky) the stock has been historically.
+                    * **The Blue Line (Median):** The 50th percentile outcome. Mathematically, 50% of the simulations ended above this line, and 50% ended below it.
+                    * **Risk Assessment:** This tool does not predict the future; it shows the **range of probability**.
+                    """)
+                    
+                    # Simulation Function
+                    def run_monte_carlo(prices, days=252, sims=500):
+                        returns = prices.pct_change().dropna()
+                        mu, sigma = returns.mean(), returns.std()
+                        daily_returns = np.random.normal(mu, sigma, (days, sims))
+                        price_paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
+                        return price_paths
+
+                    # Execute
+                    price_paths = run_monte_carlo(prophet_df['y'])
+                    median_path = np.median(price_paths, axis=1)
+                    
+                    # Plotting
+                    fig_mc = go.Figure()
+                    for i in range(50): # Plot 50 paths for visual clarity
+                        fig_mc.add_trace(go.Scatter(x=list(range(252)), y=price_paths[:, i], 
+                                                     line=dict(color='lightgray', width=1), showlegend=False))
+                    
+                    fig_mc.add_trace(go.Scatter(x=list(range(252)), y=median_path, 
+                                                 line=dict(color='blue', width=3), name='Median (50%) Path'))
+                    
+                    fig_mc.update_layout(template="plotly_white", xaxis_title="Trading Days", yaxis_title="Projected Price")
+                    st.plotly_chart(fig_mc, use_container_width=True)
+                    
+                    st.caption("Each gray line is a 'random walk' based on past performance. The blue line is the midpoint of all those possibilities.")
     
     except Exception as e:
         st.error(f"Error: {e}")
