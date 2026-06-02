@@ -60,13 +60,40 @@ if st.button("Generate Forecast") and ticker:
             prophet_df = prophet_df[prophet_df['ds'] >= four_years_ago].dropna()
             current_price = prophet_df['y'].iloc[-1]
             
-            # Prophet Engine
-            m = Prophet(daily_seasonality=True).fit(prophet_df)
-            forecast = m.predict(m.make_future_dataframe(periods=30))
-            forecasted_price = forecast['yhat'].iloc[-1]
-            delta = forecasted_price - current_price
-            growth_pct = ((forecasted_price - current_price) / current_price) * 100
-            trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
+            It seems when re-integrating the new sections, the specific forecast metrics for the 6-month and 1-year windows were accidentally pruned.
+
+I have restored them into the Metrics Row below, along with the Prophet engine logic. Please use this updated code block for your metrics and the Prophet graph:
+
+Python
+                # --- PROPHET FORECASTING & METRICS ---
+                m = Prophet(daily_seasonality=True).fit(prophet_df)
+                
+                # Predictions for specific time horizons
+                forecast_30 = m.predict(m.make_future_dataframe(periods=30))
+                forecast_6m = m.predict(m.make_future_dataframe(periods=180))
+                forecast_1y = m.predict(m.make_future_dataframe(periods=365))
+                
+                price_30 = forecast_30['yhat'].iloc[-1]
+                price_6m = forecast_6m['yhat'].iloc[-1]
+                price_1y = forecast_1y['yhat'].iloc[-1]
+                
+                def get_delta_text(forecasted, current):
+                    return f"{forecasted - current:+.2f}"
+
+                # Metrics Row (Restored all 4 metrics)
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("Current", f"${current_price:,.2f}")
+                col2.metric("30-Day", f"${price_30:,.2f}", get_delta_text(price_30, current_price))
+                col3.metric("6-Month", f"${price_6m:,.2f}", get_delta_text(price_6m, current_price))
+                col4.metric("1-Year", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
+                
+                # Graph (Prophet Projection)
+                st.subheader("Price Projection (Prophet Model)")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
+                fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='1-Year Forecast', line=dict(color='#0000FF', dash='dash')))
+                fig.update_layout(template="plotly_white", xaxis_title="Date", yaxis_title="Price")
+                st.plotly_chart(fig, use_container_width=True)
             
             # Sentiment
             news_items = yf.Search(ticker).news
