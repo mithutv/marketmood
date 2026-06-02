@@ -101,13 +101,18 @@ if st.button("Generate Forecast"):
 
     # News Section
             st.markdown("### Recent Market News")
-            news = getattr(ticker_obj, 'news', [])
-            if news:
-                for item in news[:3]:
-                    st.markdown(f"**{item.get('title')}**")
-                    st.caption(f"Source: {item.get('publisher')} | [Read More]({item.get('link')})")
-            else:
-                st.write("No news data available.")
+
+# Fetch news and filter out items that don't have a title
+news = getattr(ticker_obj, 'news', [])
+valid_news = [item for item in news if item.get('title')]
+
+if valid_news:
+    for item in valid_news[:3]:
+        st.markdown(f"**{item.get('title')}**")
+        st.caption(f"Source: {item.get('publisher')} | [Read More]({item.get('link')})")
+else:
+    # Instead of showing "None", show a helpful message or nothing at all
+    st.info("No recent news headlines are currently available for this ticker.")
             
          
     except Exception as e:
