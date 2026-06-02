@@ -168,25 +168,34 @@ if st.button("Generate Forecast"):
                     status_label = "⚪ Neutral"
 
                 # --- 4. Render Gauge ---
-                gauge_html = f"""
+               gauge_html = f"""
                 <style>
                 .gauge-container {{ width: 100%; max-width: 400px; margin: 20px auto; font-family: sans-serif; text-align: center; }}
                 .gauge-base {{ position: relative; width: 100%; height: 30px; background-color: #e0e0e0; border-radius: 15px; overflow: hidden; }}
                 .gauge-fill {{ height: 100%; background-color: {gauge_color}; width: {normalized_score}%; border-radius: 15px; transition: width 0.5s ease-in-out; }}
-                .gauge-labels {{ display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.75rem; color: #666; }}
-                .gauge-center-label {{ font-weight: bold; font-size: 1.1rem; margin-top: 10px; color: {gauge_color}; }}
+                
+                /* Center Marker for 0 position */
+                .gauge-center-line {{ position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background-color: white; z-index: 1; }}
+                
+                .gauge-labels {{ display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem; font-weight: 600; color: #444; }}
+                .gauge-center-label {{ font-weight: 800; font-size: 1.2rem; margin-top: 12px; color: {gauge_color}; }}
                 </style>
+                
                 <div class="gauge-container">
-                    <h3>Market Sentiment Gauge</h3>
-                    <div class="gauge-base"><div class="gauge-fill"></div></div>
+                    <div style="font-size: 1.1rem; margin-bottom: 5px;">Market Sentiment Gauge</div>
+                    <div class="gauge-base">
+                        <div class="gauge-center-line"></div>
+                        <div class="gauge-fill"></div>
+                    </div>
                     <div class="gauge-labels">
-                        <span>🔴 -1</span><span>⚪ 0</span><span>🟢 +1</span>
+                        <span>🔴 Bearish</span>
+                        <span>Neutral</span>
+                        <span>🟢 Bullish</span>
                     </div>
                     <div class="gauge-center-label">{status_label} ({avg_sentiment:.2f})</div>
                 </div>
                 """
                 st.markdown(gauge_html, unsafe_allow_html=True)
-
             else:
                 st.info("No recent news headlines available.")
                 
