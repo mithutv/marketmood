@@ -99,8 +99,16 @@ if st.button("Generate Forecast"):
                     </div>
                     """, unsafe_allow_html=True)
             else:
-                # Optionally hide the section if no news exists
-                pass
+                st.markdown("### Fundamental Snapshot")
+    ticker_info = ticker_obj.info
+    
+    # Create a cleaner grid for ratios
+    col1, col2 = st.columns(2)
+    col1.metric("P/E Ratio", ticker_info.get('trailingPE', 'N/A'))
+    col2.metric("Market Cap", f"{ticker_info.get('marketCap', 0) / 1e9:.2f}B")
+    
+    st.write("Beta:", ticker_info.get('beta', 'N/A'))
+    st.write("Dividend Yield:", f"{ticker_info.get('dividendYield', 0) * 100:.2f}%")
             
             # 9. Broad Market Sentiment
             st.markdown("### Broad Market Sentiment (S&P 500)")
