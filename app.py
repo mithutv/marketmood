@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 from prophet import Prophet
 
 # --- CONFIG & CACHE ---
-st.set_page_config(page_title="MarketMood: Sentiment & Trend Analysis Tool", layout="wide")
 st.title("QuantLens: AI-Driven Financial Forecasting")
 st.caption("Precision predictive modeling for modern investors.")
 
