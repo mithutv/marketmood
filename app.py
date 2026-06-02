@@ -15,6 +15,12 @@ st.markdown("""
         font-weight: 800;
         font-size: 16px;
     }
+
+    /* Center align header text */
+    [data-testid="stDataFrame"] thead tr th div {
+        display: flex;
+        justify-content: center;
+    }
     
     /* Blue Button Styling */
     div.stButton > button:first-child {
