@@ -157,7 +157,7 @@ if st.button("Generate Forecast"):
                 # 4. Sentiment Summary
                 avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
                 label = "🟢 Bullish" if avg_sentiment > 0.1 else ("🔴 Bearish" if avg_sentiment < -0.1 else "⚪ Neutral")
-                st.metric("Aggregate Sentiment Score", f"{avg_sentiment:.2f}", label)
+                st.metric("**Aggregate Sentiment Score**", f"{avg_sentiment:.2f}", label)
             else:
                 st.info("No recent news headlines available.")
                 
