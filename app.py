@@ -61,6 +61,7 @@ if st.button("Generate Forecast"):
     try:
         # 1. Fetch Data
         df = get_stock_data(ticker)
+        ticker_obj = yf.Ticker(ticker)
         
         if df.empty:
             st.error("No data found for this ticker.")
@@ -121,8 +122,7 @@ if st.button("Generate Forecast"):
 
 
             # 8. News Section & Sentiment Analysis
-            from textblob import TextBlob
-            
+             from textblob import TextBlob
             st.markdown("### Recent Market News & Sentiment")
             news = getattr(ticker_obj, 'news', [])
             valid_news = [item for item in news if item.get('title')]
@@ -130,28 +130,16 @@ if st.button("Generate Forecast"):
             if valid_news:
                 sentiment_scores = []
                 for item in valid_news[:3]:
-                    # Analyze sentiment
                     analysis = TextBlob(item.get('title'))
                     sentiment_scores.append(analysis.sentiment.polarity)
-                    
-                    # Display news
                     st.markdown(f"**{item.get('title')}**")
                     st.caption(f"Source: {item.get('publisher')} | [Read More]({item.get('link')})")
                 
-                # Calculate average sentiment
                 avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
-                
-                # Determine Sentiment Label
-                if avg_sentiment > 0.1:
-                    sentiment_label = "🟢 Bullish News"
-                elif avg_sentiment < -0.1:
-                    sentiment_label = "🔴 Bearish News"
-                else:
-                    sentiment_label = "⚪ Neutral News"
-                
-                st.metric("Aggregate Sentiment Score", f"{avg_sentiment:.2f}", sentiment_label)
+                label = "🟢 Bullish" if avg_sentiment > 0.1 else ("🔴 Bearish" if avg_sentiment < -0.1 else "⚪ Neutral")
+                st.metric("Aggregate Sentiment Score", f"{avg_sentiment:.2f}", label)
             else:
-                st.info("No recent news headlines are currently available.")
+                st.info("No recent news headlines available.")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
