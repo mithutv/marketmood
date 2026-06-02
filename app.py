@@ -32,7 +32,16 @@ if st.button("Generate Forecast"):
             prophet_df.columns = ['ds', 'y']
             
             # Verify data is clean
-            st.write("Data Sample:", prophet_df.head())
+            # Clean up the table for display
+            st.subheader(f"Historical Data for {ticker}")
+        
+            # Formatting the display table
+            display_df = prophet_df.copy()
+            display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d') # Clean date format
+            display_df.columns = ['Date', 'Closing Price'] # Rename columns for clarity
+        
+        # Show as a clean, interactive table
+        st.dataframe(display_df.head(10), use_container_width=True)
 
             # 3. PROPHET ENGINE
             m = Prophet(daily_seasonality=True)
