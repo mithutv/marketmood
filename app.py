@@ -103,11 +103,11 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-         # --- ROW 3: PATTERN PREDICTOR (ML) ---
+        # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             
-            # 1. Technical Indicators
+            # Technical Indicators
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
@@ -116,22 +116,27 @@ if st.button("Generate Forecast") and ticker:
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
             
-            # 2. Optimized & Cached Data Fetching
-            @st.cache_data(ttl=3600)
-            def get_ticker_metadata(t):
-                ticker_obj = yf.Ticker(t)
-                return ticker_obj.info, ticker_obj.news
-
-            info, news = get_ticker_metadata(ticker)
-            
-            ml_df['PE_Ratio'] = info.get('trailingPE') or info.get('forwardPE') or 20.0
-            
-            if news and isinstance(news, list):
-                scores = [TextBlob(n.get('title', '')).sentiment.polarity for n in news[:5]]
-                ml_df['Sentiment'] = np.mean(scores)
-            else:
+            # Rate-Limit Proof Metadata Fetching
+            # We use a try-except block. If Yahoo blocks us, we just skip it 
+            # and use default values so the ML model still functions.
+            try:
+                ticker_obj = yf.Ticker(ticker)
+                # Fetch only what we need, not the whole 'info' dictionary if possible
+                info = ticker_obj.fast_info
+                # Use a very short timeout if possible or just wrap the call
+                ml_df['PE_Ratio'] = info.get('trailingPE') or 20.0
+                
+                news = ticker_obj.news
+                if news and isinstance(news, list):
+                    scores = [TextBlob(n.get('title', '')).sentiment.polarity for n in news[:3]]
+                    ml_df['Sentiment'] = np.mean(scores)
+                else:
+                    ml_df['Sentiment'] = 0.0
+            except:
+                # If we get rate limited, this code runs and prevents a crash
+                ml_df['PE_Ratio'] = 20.0
                 ml_df['Sentiment'] = 0.0
-            
+
             # 3. Clean and Train
             ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
