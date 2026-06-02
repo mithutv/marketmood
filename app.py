@@ -98,3 +98,19 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"The model suggests a {trend_emoji} trend. Projected price: **${forecasted_price:,.2f}** ({delta:+.2f} | {growth_pct:+.2f}%).")
             
             # Annual Table
+            with st.expander("View Annual Historical Summary"):
+                summary_df = prophet_df.copy()
+                summary_df['Year'] = summary_df['ds'].dt.year
+                annual = summary_df.groupby('Year')['y'].agg(['mean', 'max', 'min']).reset_index().sort_values('Year', ascending=False)
+                annual.columns = ['Year', 'Avg Price', 'High', 'Low']
+                for col in ['Avg Price', 'High', 'Low']: annual[col] = annual[col].map('${:,.2f}'.format)
+                st.dataframe(annual, use_container_width=True, hide_index=True)
+
+            # News
+            st.write('<h3 style="margin-bottom: 0px;">Recent Market News</h3>', unsafe_allow_html=True)
+            for item in valid_news[:3]:
+                link = item.get('link') or item.get('clickThroughUrl') or "#"
+                st.markdown(f"**{item.get('title')}**")
+                st.caption(f"Source: {item.get('publisher')} | [Read More]({link})" if link != "#" else f"Source: {item.get('publisher')}")
+    except Exception as e:
+        st.error(f"Error: {e}")
