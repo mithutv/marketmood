@@ -103,7 +103,7 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-          # --- ROW 3: PATTERN PREDICTOR (ML) ---
+         # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             
@@ -114,45 +114,50 @@ if st.button("Generate Forecast") and ticker:
             loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
-            
-            # 2. Enhanced Features (Volatility, Fundamentals, Sentiment)
             ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
-            ticker_info = yf.Ticker(ticker).info
-            ml_df['PE_Ratio'] = ticker_info.get('trailingPE', 20)
             
-            news = yf.Ticker(ticker).news
-            ml_df['Sentiment'] = TextBlob(news[0]['title']).sentiment.polarity if (news and isinstance(news, list) and len(news) > 0 and 'title' in news[0]) else 0
+            # 2. Optimized & Cached Data Fetching
+            @st.cache_data(ttl=3600)
+            def get_ticker_metadata(t):
+                ticker_obj = yf.Ticker(t)
+                return ticker_obj.info, ticker_obj.news
+
+            info, news = get_ticker_metadata(ticker)
             
-            # 3. Clean data (fill missing values instead of dropping)
+            ml_df['PE_Ratio'] = info.get('trailingPE') or info.get('forwardPE') or 20.0
+            
+            if news and isinstance(news, list):
+                scores = [TextBlob(n.get('title', '')).sentiment.polarity for n in news[:5]]
+                ml_df['Sentiment'] = np.mean(scores)
+            else:
+                ml_df['Sentiment'] = 0.0
+            
+            # 3. Clean and Train
             ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
-            
-            if ml_df['SMA_20'].isnull().all():
-                st.error("Error: ML feature calculation returned empty values.")
-            else:
-                days_ahead = 252 
-                # Ensure we have enough history to train for 1-year ahead
-                if len(ml_df) > days_ahead: 
-                    X = ml_df[features].iloc[:-days_ahead]
-                    y = ml_df['y'].shift(-days_ahead).dropna()
-                    X = X.iloc[:len(y)]
-                    
-                    # Train model and predict
+            ml_df[features] = ml_df[features].fillna(0)
+
+            days_ahead = 252 
+            if len(ml_df) > days_ahead: 
+                X = ml_df[features].iloc[:-days_ahead]
+                y = ml_df['y'].shift(-days_ahead).dropna()
+                X = X.iloc[:len(y)]
+                
+                if not X.empty and not y.empty:
                     model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
                     pred = model.predict(ml_df[features].iloc[[-1]])[0]
                     
-                    # Feature Importance
                     st.write("### Model Insight: What drives this prediction?")
                     importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
-                    importances = importances.sort_values(by='Importance', ascending=False)
-                    st.bar_chart(importances.set_index('Feature'))
+                    st.bar_chart(importances.set_index('Feature').sort_values(by='Importance', ascending=False))
                     
-                    # Display Metric
-                    ml_col1, ml_col2 = st.columns([1, 2])
-                    ml_col1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                    ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead based on technicals, sentiment, and fundamentals.")
+                    col_ml1, col_ml2 = st.columns([1, 2])
+                    col_ml1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
+                    col_ml2.caption("Random Forest Model: Estimating price for 1 year ahead.")
                 else:
-                    st.warning("Insufficient historical data to train 1-year ML model.")
+                    st.warning("Insufficient data for ML training.")
+            else:
+                st.warning("Insufficient historical data for ML training.")
             
             st.divider()
 
