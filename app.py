@@ -124,6 +124,26 @@ if st.button("Generate Forecast") and ticker:
             if ml_df['SMA_20'].isnull().all():
                 st.error("Error: SMA calculation returned empty values. Check your data source.")
             else:
+                # Define 1-year ahead target (252 trading days)
+                days_ahead = 252 
+                
+                if len(ml_df) > days_ahead: 
+                    X = ml_df[['SMA_20', 'RSI']].iloc[:-days_ahead]
+                    y = ml_df['y'].shift(-days_ahead).dropna()
+                    
+                    # Align X to match the shortened y length
+                    X = X.iloc[:len(y)]
+                    
+                    model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+                    pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
+                    
+                    ml_col1, ml_col2 = st.columns([1, 2])
+                    ml_col1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
+                    ml_col2.caption("Random Forest Model: Estimating price for 1 year ahead based on current technical signals.")
+                else:
+                    st.warning("Insufficient data to train ML model for 1-year prediction.")
+            
+            st.divider()
             
 
             # --- ROW 4: MONTE CARLO ---
