@@ -46,7 +46,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-ticker = st.text_input("Analyze a new stock:", placeholder="e.g., AAPL, TSLA, GOOGL", value="NVDA").upper()
+st.markdown("""
+    <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">
+        Analyze a new stock
+    </div>
+""", unsafe_allow_html=True)
+
+ticker = st.text_input(
+    label="Hidden Label", 
+    label_visibility="collapsed", 
+    placeholder="e.g., AAPL, NVDA, TSLA", 
+    value="NVDA"
+).upper()
 
 if st.button("Generate Forecast"):
     try:
