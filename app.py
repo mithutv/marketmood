@@ -140,18 +140,24 @@ if st.button("Generate Forecast"):
             # Summary
             st.info(f"Based on the analysis of historical price patterns, the model suggests a {trend_emoji} trend. The projected price 30 days from now is **${forecasted_price:,.2f}**, which represents a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${current_price:,.2f}**.")
             
-            # Collapsible Table: Annual Summary
-            with st.expander("***View Annual Historical Summary***"):
-                # Copy the data and extract the year
+            # --- Collapsible Table: Annual Summary ---
+            with st.expander("View Annual Historical Summary"):
+                # Create a copy and ensure 'ds' is datetime
                 summary_df = prophet_df.copy()
+                summary_df['ds'] = pd.to_datetime(summary_df['ds'])
                 summary_df['Year'] = summary_df['ds'].dt.year
                 
-                # Group by year and calculate the average price
-                annual_data = summary_df.groupby('Year')['y'].mean().reset_index()
-                annual_data.columns = ['Year', 'Average Closing Price']
+                # Group by Year and calculate Mean and Max price to see the range
+                annual_data = summary_df.groupby('Year')['y'].agg(['mean', 'max', 'min']).reset_index()
+                annual_data.columns = ['Year', 'Avg Price', 'High', 'Low']
                 
-                # Format the price
-                annual_data['Average Closing Price'] = annual_data['Average Closing Price'].map('${:,.2f}'.format)
+                # Format the numbers
+                annual_data['Avg Price'] = annual_data['Avg Price'].map('${:,.2f}'.format)
+                annual_data['High'] = annual_data['High'].map('${:,.2f}'.format)
+                annual_data['Low'] = annual_data['Low'].map('${:,.2f}'.format)
+                
+                # Sort descending so 2026 is at the top
+                annual_data = annual_data.sort_values(by='Year', ascending=False)
                 
                 st.dataframe(annual_data, use_container_width=True, hide_index=True)
 
