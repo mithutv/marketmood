@@ -124,9 +124,14 @@ if st.button("Generate Forecast") and ticker:
             ticker_info = yf.Ticker(ticker).info
             ml_df['PE_Ratio'] = ticker_info.get('trailingPE', 20)
             
-            # Sentiment
+            # 3. Sentiment (News Headlines)
             news = yf.Ticker(ticker).news
-            ml_df['Sentiment'] = TextBlob(news[0]['title']).sentiment.polarity if news else 0
+            # Safely get the title if it exists, otherwise default to empty string
+            if news and isinstance(news, list) and len(news) > 0 and 'title' in news[0]:
+                headline = news[0]['title']
+                ml_df['Sentiment'] = TextBlob(headline).sentiment.polarity
+            else:
+                ml_df['Sentiment'] = 0 # Neutral if no news or no title found
             
             
             # Clean and define features
