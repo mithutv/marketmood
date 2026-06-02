@@ -25,7 +25,7 @@ st.markdown("""
 # --- HEADER ---
 st.title("Market Mood: AI-Driven Financial Forecasting")
 st.markdown("""
-This application analyzes the **last 4 years** of historical price action to provide a 30-day projection using **Meta's Prophet**. 
+This application analyzes the **last 4 years** of historical price action to provide a projection using **Meta's Prophet**. 
 The dashboard provides an executive summary of current pricing, future forecasts, and real-time sentiment analysis.
 """)
 
