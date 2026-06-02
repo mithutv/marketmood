@@ -66,11 +66,13 @@ if st.button("Generate Forecast"):
             st.error("No data found for this ticker.")
         else:
             # 2. Data Preparation
-           prophet_df = df.reset_index()[['Date', 'Adj Close']].rename(columns={'Date': 'ds', 'Adj Close': 'y'})
+            prophet_df = df.reset_index()[['Date', 'Adj Close']].rename(columns={'Date': 'ds', 'Adj Close': 'y'})
+            
+            # Clean the data
+            prophet_df = prophet_df.dropna()
+            prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
             
             # 3. Prophet Engine
-            prophet_df = prophet_df.dropna() # Remove any rows with missing values
-            prophet_df['ds'] = pd.to_datetime(prophet_df['ds']) # Ensure dates are valid
             m = Prophet(daily_seasonality=True).fit(prophet_df)
             forecast = m.predict(m.make_future_dataframe(periods=30))
             
