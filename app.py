@@ -106,81 +106,57 @@ if st.button("Generate Forecast") and ticker:
             # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
+            days_ahead = 252 # Define this clearly at the top of the block
             
-            # 1. Technicals
-            ml_df['SMA_20'] = ml_df['y'].rolling(20).mean()
-            # Normalize RSI to 0-1 range
-            ml_df['RSI'] = (100 - (100 / (1 + (ml_df['y'].diff().clip(lower=0).rolling(14).mean() / 
-                            -ml_df['y'].diff().clip(upper=0).rolling(14).mean())))) / 100
+            # 1. Technical Indicators
+            ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
+            delta = ml_df['y'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
+            rs = gain / loss.replace(0, 0.001)
+            ml_df['RSI'] = 100 - (100 / (1 + rs))
+            ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
             
-            # 2. Dynamic Features (Handle potential missing High/Low)
-            if 'High' in df.columns and 'Low' in df.columns:
-                ml_df['ATR'] = (df['High'] - df['Low']).rolling(14).mean() / ml_df['y'] # Normalized ATR
-            else:
-                ml_df['ATR'] = 0.0
-
-            # 3. Dynamic Metadata
+            # 2. Metadata (Try-Except prevents crashes)
             try:
                 ticker_obj = yf.Ticker(ticker)
-                # Use forward/trailing PE relative to price to give it variance
                 info = ticker_obj.fast_info
-                pe = info.get('trailingPE') or 20.0
-                ml_df['PE_Ratio'] = pe / 100 # Scaling factor
-                
+                ml_df['PE_Ratio'] = info.get('trailingPE') or 20.0
                 news = ticker_obj.news
-                if news:
-                    ml_df['Sentiment'] = np.mean([TextBlob(n.get('title', '')).sentiment.polarity for n in news[:5]])
+                if news and isinstance(news, list):
+                    ml_df['Sentiment'] = np.mean([TextBlob(n.get('title', '')).sentiment.polarity for n in news[:3]])
                 else:
                     ml_df['Sentiment'] = 0.0
             except:
-                ml_df['PE_Ratio'] = 0.2
+                ml_df['PE_Ratio'] = 20.0
                 ml_df['Sentiment'] = 0.0
-
-            ml_df = ml_df.fillna(0)
-
-            # 1. Feature Engineering: De-trend the data
-            # Use 'Return' instead of 'Price' as the target
-            ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
-            ml_df = ml_df.dropna()
-
-            features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
-            
-            # 2. Train on Returns
-            X = ml_df[features]
-            y = ml_df['Target_Return']
-            
-            model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-            
-            # 3. Predict the return and convert back to price
-            predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
-            pred = current_price * (1 + predicted_return)
             
             # 3. Clean and Train
             ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
             ml_df[features] = ml_df[features].fillna(0)
 
-            days_ahead = 252 
-            if len(ml_df) > days_ahead: 
-                X = ml_df[features].iloc[:-days_ahead]
-                y = ml_df['y'].shift(-days_ahead).dropna()
-                X = X.iloc[:len(y)]
+            # 4. Target Calculation (Predicting Returns vs Price)
+            ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
+            ml_df = ml_df.dropna()
+
+            if len(ml_df) > days_ahead:
+                X = ml_df[features]
+                y = ml_df['Target_Return']
                 
-                if not X.empty and not y.empty:
-                    model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-                    pred = model.predict(ml_df[features].iloc[[-1]])[0]
-                    
-                    st.write("### Model Insight: What drives this prediction?")
-                    importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
-                    st.bar_chart(importances.set_index('Feature').sort_values(by='Importance', ascending=False))
-                    
-                    col_ml1, col_ml2 = st.columns([1, 2])
-                    col_ml1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                    col_ml2.caption("Random Forest Model: Estimating price for 1 year ahead.")
-                else:
-                    st.warning("Insufficient data for ML training.")
+                model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+                predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
+                pred = current_price * (1 + predicted_return)
+                
+                st.write("### Model Insight: What drives this prediction?")
+                importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
+                st.bar_chart(importances.set_index('Feature').sort_values(by='Importance', ascending=False))
+                
+                col_ml1, col_ml2 = st.columns([1, 2])
+                col_ml1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
+                col_ml2.caption("Random Forest Model: Estimating price using return-based prediction.")
             else:
-                st.warning("Insufficient historical data for ML training.")
+                st.warning("Insufficient historical data to train the ML model.")
             
             st.divider()
 
