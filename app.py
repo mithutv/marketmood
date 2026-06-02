@@ -4,6 +4,12 @@ import pandas as pd
 import plotly.graph_objects as go
 from prophet import Prophet
 from streamlit_searchbox import st_searchbox
+import nltk
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 # --- GLOBAL STYLES ---
 st.set_page_config(page_title="Market Mood", layout="centered")
@@ -122,7 +128,7 @@ if st.button("Generate Forecast"):
 
 
             # 8. News Section & Sentiment Analysis
-             from textblob import TextBlob
+            from textblob import TextBlob
             st.markdown("### Recent Market News & Sentiment")
             news = getattr(ticker_obj, 'news', [])
             valid_news = [item for item in news if item.get('title')]
