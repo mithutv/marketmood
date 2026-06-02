@@ -127,11 +127,7 @@ if st.button("Generate Forecast"):
             st.dataframe(display_df, use_container_width=True, hide_index=True, height=400)
 
 
-           To ensure this code runs without errors, we need to calculate avg_sentiment before we try to use it to generate the normalized_score and gauge_html.
 
-Here is the corrected, clean version of your news and gauge section:
-
-Python
             # 8. News Section & Sentiment Analysis
             st.markdown("### Recent Market News")
             
