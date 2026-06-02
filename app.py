@@ -98,13 +98,14 @@ if st.button("Generate Forecast"):
             else:
                 st.write("No recent news found for this ticker.")
 
-                # --- Add this below your news section to get broader context ---
+               # --- Broad Market Sentiment ---
             st.markdown("### Broad Market Sentiment (S&P 500)")
             spy = yf.Ticker("SPY")
             spy_news = spy.news
 
             for item in spy_news[:2]:
-            st.markdown(f"- [{item.get('title')}]({item.get('link')})")
+                # This line must be indented further than the 'for' line above
+                st.markdown(f"- [{item.get('title')}]({item.get('link')})")
             
    except Exception as e:
    st.error(f"Error generating forecast: {e}")
