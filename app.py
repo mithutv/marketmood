@@ -138,9 +138,9 @@ if st.button("Generate Forecast") and ticker:
             col_a, col_b = st.columns([1, 3])
             with col_a:
                 if bullish_count >= 2:
-                    st.metric("Consensus Sentiment", "Bullish", delta="Strong Signal")
+                    st.metric("Consensus", "Bullish 🐂", delta="Strong Buy")
                 else:
-                    st.metric("Consensus Sentiment", "Bearish", delta="Caution")
+                        st.metric("Consensus", "Bearish 🐻", delta="Caution")
             
             with col_b:
                 st.write(f"Based on the integration of all models, the consensus is **{bullish_count}/3 indicators favoring a bullish outlook**. "
