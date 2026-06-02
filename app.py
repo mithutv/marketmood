@@ -140,12 +140,20 @@ if st.button("Generate Forecast"):
             # Summary
             st.info(f"Based on the analysis of historical price patterns, the model suggests a {trend_emoji} trend. The projected price 30 days from now is **${forecasted_price:,.2f}**, which represents a movement of **{delta:+.2f}** ({growth_pct:+.2f}%) from the current price of **${current_price:,.2f}**.")
             
-            # Collapsible Table
-            with st.expander("View Historical Data"):
-                display_df = prophet_df.copy()
-                display_df['ds'] = display_df['ds'].dt.strftime('%b %d, %Y')
-                display_df.columns = ['Date', 'Closing Price']
-                st.dataframe(display_df, use_container_width=True, hide_index=True)
+            # Collapsible Table: Annual Summary
+            with st.expander("***View Annual Historical Summary***"):
+                # Copy the data and extract the year
+                summary_df = prophet_df.copy()
+                summary_df['Year'] = summary_df['ds'].dt.year
+                
+                # Group by year and calculate the average price
+                annual_data = summary_df.groupby('Year')['y'].mean().reset_index()
+                annual_data.columns = ['Year', 'Average Closing Price']
+                
+                # Format the price
+                annual_data['Average Closing Price'] = annual_data['Average Closing Price'].map('${:,.2f}'.format)
+                
+                st.dataframe(annual_data, use_container_width=True, hide_index=True)
 
             # News Section
             st.markdown("### Recent Market News")
