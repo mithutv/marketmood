@@ -7,15 +7,19 @@ from prophet import Prophet
 # --- GLOBAL STYLES ---
 st.markdown("""
     <style>
-    .stApp { font-size: 24px; }
-    h1 { font-size: 50px !important; }
-    div.stButton > button:first-child {
-        background-color: #007BFF;
-        color: white;
-        border: none;
-        padding: 10px 24px;
-        font-size: 16px;
-        border-radius: 8px;
+    /* ... your existing styles ... */
+    
+    /* Make table headers black, bold, and left-aligned */
+    [data-testid="stDataFrame"] thead tr th {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        font-weight: bold !important;
+        text-align: left !important;
+    }
+    
+    /* Ensure the body text is also left-aligned */
+    [data-testid="stDataFrame"] tbody tr td {
+        text-align: left !important;
     }
     </style>
 """, unsafe_allow_html=True)
