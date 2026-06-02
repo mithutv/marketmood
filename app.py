@@ -70,30 +70,32 @@ if st.button("Generate Forecast"):
                 growth_pct = ((forecasted_price - current_price) / current_price) * 100
                 trend_emoji = "📈 (Bullish)" if forecasted_price > current_price else "📉 (Bearish)"
 
-                # --- Prophet Engine ---
+               # Prophet Engine
                 m = Prophet(daily_seasonality=True).fit(prophet_df)
                 
-                # Create 3 future dataframes for the different horizons
+                # Create horizons
                 future_30 = m.make_future_dataframe(periods=30)
                 future_6m = m.make_future_dataframe(periods=180)
                 future_1y = m.make_future_dataframe(periods=365)
                 
-                # Generate predictions
                 forecast_30 = m.predict(future_30)
                 forecast_6m = m.predict(future_6m)
                 forecast_1y = m.predict(future_1y)
                 
-                # Extract the final forecasted price for each horizon
                 price_30 = forecast_30['yhat'].iloc[-1]
                 price_6m = forecast_6m['yhat'].iloc[-1]
                 price_1y = forecast_1y['yhat'].iloc[-1]
                 
-                # Displaying these as metrics
+                # Helper to determine trend
+                def get_trend_icon(forecasted, current):
+                    return "📈" if forecasted > current else "📉"
+
+                # Displaying these as metrics with trend icons
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("Current", f"${current_price:,.2f}")
-                col2.metric("30-Day", f"${price_30:,.2f}")
-                col3.metric("6-Month", f"${price_6m:,.2f}")
-                col4.metric("1-Year", f"${price_1y:,.2f}")
+                col2.metric("30-Day", f"${price_30:,.2f}", f"{get_trend_icon(price_30, current_price)}")
+                col3.metric("6-Month", f"${price_6m:,.2f}", f"{get_trend_icon(price_6m, current_price)}")
+                col4.metric("1-Year", f"${price_1y:,.2f}", f"{get_trend_icon(price_1y, current_price)}")
                 
                 
                 # Sentiment
