@@ -32,10 +32,10 @@ except LookupError:
     nltk.download('punkt')
 
 # Page Config
-st.set_page_config(page_title="Market Mood 2.0", layout="centered")
+st.set_page_config(page_title="Marketmood", layout="centered")
 
 # Header & Scope Note
-st.title("Market Mood 2.0: AI-Driven Financial Forecasting")
+st.title("Marketmood: AI-Driven Financial Forecasting")
 st.markdown("""
 This application analyzes **4 years of historical price action** to provide a multi-dimensional forecast:
 * **Trend Projection:** Uses **Meta's Prophet** for seasonal time-series analysis.
@@ -48,7 +48,7 @@ def search_tickers(searchterm: str):
     results = yf.Search(searchterm).quotes
     return [(f"{q.get('shortname', '')} ({q.get('symbol', '')})", q.get('symbol', '')) for q in results if 'symbol' in q]
 
-ticker = st_searchbox(search_tickers, placeholder="Start typing a company name...", label="Search for a Company")
+ticker = st_searchbox(search_tickers, placeholder="Enter symbol or company name (e.g., AAPL)...", label="Search market data...")
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker): 
