@@ -87,11 +87,7 @@ if st.button("Generate Forecast") and ticker:
             fig.update_layout(template="plotly_white", xaxis_title="Date", yaxis_title="Price")
             st.plotly_chart(fig, use_container_width=True)
         
-            To make the Sentiment Meter as informative as possible, I have combined the progress bar "gauge" with a large, clear numerical display. This approach provides the visual trend (the bar) and the precise data point (the number) in one compact section.
 
-Replace your sentiment block with this:
-
-Python
             # Sentiment Analysis
             news_items = yf.Search(ticker).news
             valid_news = [item for item in news_items if item.get('title')]
