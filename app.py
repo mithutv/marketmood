@@ -49,7 +49,7 @@ selected_ticker = st_searchbox(
 )
 
 ticker = selected_ticker if selected_ticker else "NVDA"
-st.write(f"### Selected Ticker: {ticker}")
+st.write(f"##### Selected Ticker: {ticker}")
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker):
