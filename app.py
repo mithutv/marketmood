@@ -9,6 +9,22 @@ from textblob import TextBlob
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
+st.markdown("""
+    <style>
+    /* Targeting the Generate Forecast button */
+    div.stButton > button:first-child {
+        background-color: #007BFF !important; /* Force Blue */
+        color: white !important;
+        border: none !important;
+        padding: 10px 24px !important;
+        font-size: 16px !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
 # Setup NLTK
 try:
     nltk.data.find('tokenizers/punkt')
@@ -16,7 +32,7 @@ except LookupError:
     nltk.download('punkt')
 
 # Page Config
-st.set_page_config(page_title="Market Mood 2.0", layout="wide")
+st.set_page_config(page_title="Market Mood 2.0", layout="centered")
 
 # Header & Scope Note
 st.title("Market Mood 2.0: AI-Driven Financial Forecasting")
