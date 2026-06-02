@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from prophet import Prophet
 
-# --- GLOBAL STYLES (Blue Button, Table Headers, Alignment) ---
+# --- GLOBAL STYLES ---
 st.markdown("""
     <style>
     /* Clean, professional header styling */
@@ -66,10 +66,17 @@ if st.button("Generate Forecast"):
             st.subheader(f"Prediction Trend: {trend_emoji}")
             st.metric(label="Forecast Price (30 Days)", value=f"${forecasted_price:,.2f}", delta=f"{delta:+.2f}")
             
-            # 6. Graph
+            # 6. Graph with Confidence Interval
             fig = go.Figure()
+
+            # Uncertainty Interval (Shaded Area)
+            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'))
+            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(0, 0, 255, 0.1)', name='Confidence Interval'))
+
+            # Forecast and Actual Lines
             fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Forecast', line=dict(color='#0000FF')))
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
+            
             fig.update_layout(title=f"Price Forecast for {ticker}", template="plotly_white")
             st.plotly_chart(fig, use_container_width=True)
             
