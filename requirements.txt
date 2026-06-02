@@ -1,6 +1,6 @@
 streamlit
 yfinance
 plotly
-pandas
 numpy
-textblob
+pandas
+prophet
