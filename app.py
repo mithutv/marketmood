@@ -138,6 +138,23 @@ if st.button("Generate Forecast") and ticker:
 
             ml_df = ml_df.fillna(0)
 
+            # 1. Feature Engineering: De-trend the data
+            # Use 'Return' instead of 'Price' as the target
+            ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
+            ml_df = ml_df.dropna()
+
+            features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
+            
+            # 2. Train on Returns
+            X = ml_df[features]
+            y = ml_df['Target_Return']
+            
+            model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+            
+            # 3. Predict the return and convert back to price
+            predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
+            pred = current_price * (1 + predicted_return)
+            
             # 3. Clean and Train
             ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
