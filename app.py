@@ -103,7 +103,7 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-           # --- ROW 3: PATTERN PREDICTOR (ML) ---
+          # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             
@@ -115,13 +115,19 @@ if st.button("Generate Forecast") and ticker:
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            # Enhanced Features
-            ml_df['ATR'] = (ml_df['High'] - ml_df['Low']).rolling(window=14).mean()
+            # --- FIX: USE ORIGINAL 'df' FOR HIGH/LOW ---
+            # 'df' is the original yfinance download that contains all columns
+            high_low = df['High'] - df['Low']
+            ml_df['ATR'] = high_low.rolling(window=14).mean()
+            
+            # Fundamentals (P/E Ratio)
             ticker_info = yf.Ticker(ticker).info
             ml_df['PE_Ratio'] = ticker_info.get('trailingPE', 20)
             
+            # Sentiment
             news = yf.Ticker(ticker).news
             ml_df['Sentiment'] = TextBlob(news[0]['title']).sentiment.polarity if news else 0
+            
             
             # Clean and define features
             ml_df = ml_df.bfill().dropna()
