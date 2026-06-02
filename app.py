@@ -6,6 +6,7 @@ from prophet import Prophet
 from streamlit_searchbox import st_searchbox
 import nltk
 from textblob import TextBlob
+import numpy as np  # Required for Monte Carlo simulation calculations
 
 try:
     nltk.data.find('tokenizers/punkt')
@@ -135,5 +136,43 @@ if st.button("Generate Forecast") and ticker:
                 link = item.get('link') or item.get('clickThroughUrl') or "#"
                 st.markdown(f"**{item.get('title')}**")
                 st.caption(f"Source: {item.get('publisher')} | [Read More]({link})" if link != "#" else f"Source: {item.get('publisher')}")
+
+
+             # --- MONTE CARLO SIMULATION SECTION ---
+            st.header("Probabilistic Projection: Monte Carlo Simulation")
+            with st.expander("View 1-Year Monte Carlo Simulation Details"):
+                st.write("""
+                **Scope Note:** This simulation estimates price uncertainty by generating 500 potential future 
+                price paths based on the stock's historical volatility ($\sigma$) and average drift ($\mu$) 
+                over the last 4 years.
+                
+                **Analysis:** The blue line represents the 50th percentile (median) outcome, while the 
+                gray cloud illustrates the range of possible volatility-adjusted movements.
+                """)
+                
+                # Simulation Function
+                def run_monte_carlo(prices, days=252, sims=500):
+                    returns = prices.pct_change().dropna()
+                    mu, sigma = returns.mean(), returns.std()
+                    daily_returns = np.random.normal(mu, sigma, (days, sims))
+                    price_paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
+                    return price_paths
+            
+                # Execute
+                price_paths = run_monte_carlo(prophet_df['y'])
+                median_path = np.median(price_paths, axis=1)
+                
+                # Plotting
+                fig_mc = go.Figure()
+                for i in range(50): # Plot 50 paths for visual clarity
+                    fig_mc.add_trace(go.Scatter(x=list(range(252)), y=price_paths[:, i], 
+                                                 line=dict(color='lightgray', width=1), showlegend=False))
+                
+                fig_mc.add_trace(go.Scatter(x=list(range(252)), y=median_path, 
+                                             line=dict(color='blue', width=3), name='Median (50%) Path'))
+                
+                fig_mc.update_layout(template="plotly_white", xaxis_title="Trading Days", yaxis_title="Projected Price")
+                st.plotly_chart(fig_mc, use_container_width=True)
+    
     except Exception as e:
         st.error(f"Error: {e}")
