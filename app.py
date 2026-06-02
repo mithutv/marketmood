@@ -94,18 +94,32 @@ if st.button("Generate Forecast") and ticker:
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20).mean()
+            
+            # Improved RSI calculation
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-            ml_df['RSI'] = 100 - (100 / (1 + gain / loss))
-            ml_df = ml_df.dropna()
-            X, y = ml_df[['SMA_20', 'RSI']].iloc[:-1], ml_df['y'].shift(-1).dropna()
-            model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
-            pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
+            rs = gain / loss.replace(0, 0.001) # Avoid division by zero
+            ml_df['RSI'] = 100 - (100 / (1 + rs))
             
-            ml_col1, ml_col2 = st.columns([1, 2])
-            ml_col1.metric("ML Next Day Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-            ml_col2.caption("Random Forest Model based on 20-day SMA and RSI.")
+            # Keep data even if some indicators are NaN initially
+            ml_df = ml_df.fillna(method='bfill').dropna() 
+            
+            if len(ml_df) > 30: # Ensure we have enough data
+                X = ml_df[['SMA_20', 'RSI']].iloc[:-1]
+                y = ml_df['y'].shift(-1).dropna()
+                
+                # Align X and y lengths
+                X = X.iloc[:len(y)]
+                
+                model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+                pred = model.predict(ml_df[['SMA_20', 'RSI']].iloc[[-1]])[0]
+                
+                ml_col1, ml_col2 = st.columns([1, 2])
+                ml_col1.metric("ML Next Day Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
+                ml_col2.caption("Random Forest Model based on 20-day SMA and RSI.")
+            else:
+                st.warning("Insufficient data to train ML model. Try a ticker with longer history.")
             st.divider()
 
             # --- ROW 4: MONTE CARLO ---
