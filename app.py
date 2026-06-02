@@ -43,6 +43,7 @@ ticker = st.text_input("Analyze a new stock (e.g., NVDA, AAPL):", value="NVDA").
 
 # --- FORECAST LOGIC ---
 if st.button("Generate Forecast"):
+    ticker_obj = yf.Ticker(ticker)
     try:
         # 1. Fetch Data
         df = get_stock_data(ticker)
