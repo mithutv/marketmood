@@ -42,7 +42,7 @@ def get_stock_data(ticker):
     return yf.download(ticker, threads=False, multi_level_index=False)
 
 # --- USER INPUT ---
-st.markdown('<div style="font-size: 20px; font-weight: bold;">Analyze a new stock</div>', unsafe_allow_html=True)
+st.markdown('<div style="font-size: 20px; font-weight: bold;">Analyze a new stock:</div>', unsafe_allow_html=True)
 ticker = st.text_input(label="Hidden", label_visibility="collapsed", placeholder="e.g., NVDA, AAPL", value="NVDA").upper()
 
 # --- FORECAST LOGIC ---
@@ -79,12 +79,12 @@ if st.button("Generate Forecast"):
         "Date": st.column_config.TextColumn(
             "Date", 
             width="medium",
-            alignment="center"  # Centers header and column data
+            alignment="left"  
         ),
         "Closing Price": st.column_config.NumberColumn(
             "Closing Price", 
             format="$%.2f",
-            alignment="center"  # Centers header and column data
+            alignment="left" 
         )
     }
 )
