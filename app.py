@@ -8,14 +8,25 @@ from prophet import Prophet
 # --- GLOBAL STYLES (Blue Button, Table Headers, Alignment) ---
 st.markdown("""
     <style>
-    /* Table Styling */
+    /* Table Header: Bold, Black Background, White Text, Left-Aligned, Larger */
     [data-testid="stDataFrame"] thead tr th {
         background-color: #000000 !important;
         color: #FFFFFF !important;
-        font-weight: bold !important;
+        font-weight: 800 !important;
+        font-size: 16px !important;
         text-align: left !important;
     }
-    [data-testid="stDataFrame"] tbody tr td { text-align: left !important; }
+    
+    /* Table Body: Left-Aligned, Larger Text */
+    [data-testid="stDataFrame"] tbody tr td {
+        text-align: left !important;
+        font-size: 15px !important;
+    }
+    
+    /* Ensure column headers stay left-aligned */
+    [data-testid="stDataFrame"] thead tr th div {
+        text-align: left !important;
+    }
     
     /* Blue Button Styling */
     div.stButton > button:first-child {
