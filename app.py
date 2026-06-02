@@ -128,26 +128,17 @@ if st.button("Generate Forecast"):
 
 
             # 8. News Section & Sentiment Analysis
-            news = getattr(ticker_obj, 'news', [])
-            st.write(f"DEBUG: Raw news count: {len(news)}")
-            from textblob import TextBlob
-            st.markdown("### Recent Market News & Sentiment")
-            news = getattr(ticker_obj, 'news', [])
-            valid_news = [item for item in news if item.get('title')]
-            
-            if valid_news:
-                sentiment_scores = []
-                for item in valid_news[:3]:
-                    analysis = TextBlob(item.get('title'))
-                    sentiment_scores.append(analysis.sentiment.polarity)
-                    st.markdown(f"**{item.get('title')}**")
-                    st.caption(f"Source: {item.get('publisher')} | [Read More]({item.get('link')})")
-                
-                avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
-                label = "🟢 Bullish" if avg_sentiment > 0.1 else ("🔴 Bearish" if avg_sentiment < -0.1 else "⚪ Neutral")
-                st.metric("Aggregate Sentiment Score", f"{avg_sentiment:.2f}", label)
-            else:
-                st.info("No recent news headlines available.")
+            st.markdown("### Recent Market News")
+search = yf.Search(ticker)
+news = search.news
+
+if news:
+    # Process the news list (it is usually a list of dictionaries)
+    for item in news[:3]:
+        st.markdown(f"**{item.get('title')}**")
+        st.caption(f"Source: {item.get('publisher')}")
+else:
+    st.info("No news found via Search API. Trying Ticker object...")
                 
     except Exception as e:
         st.error(f"Error generating forecast: {e}")
