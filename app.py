@@ -8,26 +8,12 @@ from prophet import Prophet
 # --- GLOBAL STYLES (Blue Button, Table Headers, Alignment) ---
 st.markdown("""
     <style>
-    /* Table Header: Bold, Black Background, White Text, Left-Aligned, Larger */
- [data-testid="stDataFrame"] thead tr th {
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        font-weight: 900 !important; /* Extra bold */
-        font-size: 16px !important;
-        text-align: left !important;
-    }
-    /* Force the second column (Price) to be left-aligned */
-    [data-testid="stDataFrame"] tbody tr td:nth-child(2) {
-        text-align: left !important;
-    }
-  /* Table Body: Left-Align ALL text */
-    [data-testid="stDataFrame"] tbody tr td {
-        text-align: left !important;
-        font-size: 15px !important;
-    }
-    /* Ensure column headers stay left-aligned */
-    [data-testid="stDataFrame"] thead tr th div {
-        text-align: left !important;
+    /* Clean, simple header styling */
+    [data-testid="stDataFrame"] thead tr th {
+        background-color: #000000;
+        color: #FFFFFF;
+        font-weight: 800;
+        font-size: 16px;
     }
     
     /* Blue Button Styling */
