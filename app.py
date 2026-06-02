@@ -6,6 +6,13 @@ import numpy as np
 from datetime import datetime, timedelta
 from textblob import TextBlob
 
+# The ttl (Time-To-Live) ensures data refreshes only once every 24 hours
+@st.cache_data(ttl=86400) 
+def get_stock_data(ticker):
+    data = yf.download(ticker)
+    return data
+
+
 # 1. Page Configuration
 st.set_page_config(page_title="MarketMood AI Alpha", page_icon="⚡", layout="wide")
 
