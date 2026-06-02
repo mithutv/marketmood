@@ -64,6 +64,11 @@ if st.button("Generate Forecast"):
 
                # Prophet Engine
                 m = Prophet(daily_seasonality=True).fit(prophet_df)
+                forecast = m.predict(m.make_future_dataframe(periods=30))
+                forecasted_price = forecast['yhat'].iloc[-1]
+                delta = forecasted_price - current_price
+                growth_pct = ((forecasted_price - current_price) / current_price) * 100
+                
                 
                 # Create horizons
                 future_30 = m.make_future_dataframe(periods=30)
