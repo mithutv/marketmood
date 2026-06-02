@@ -23,27 +23,20 @@ if st.button("Generate Forecast"):
         if df.empty:
             st.error("No data found. Please check the ticker symbol.")
         else:
-            # 2. FLATTEN DATA: Ensure it is a clean DataFrame
-            # Reset index so 'Date' is a column, then select exactly what we need
+            # Flatten Data
             df_reset = df.reset_index()
-            
-            # Keep only Date and Close, renaming them for Prophet
             prophet_df = df_reset[['Date', 'Close']].copy()
             prophet_df.columns = ['ds', 'y']
             
-            # Verify data is clean
-            # Clean up the table for display
+            # Display Table
             st.subheader(f"Historical Data for {ticker}")
-        
-            # Formatting the display table
             display_df = prophet_df.copy()
-            display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d') # Clean date format
-            display_df.columns = ['Date', 'Closing Price'] # Rename columns for clarity
-        
-        # Show as a clean, interactive table
-        st.dataframe(display_df.head(10), use_container_width=True)
+            display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d')
+            display_df.columns = ['Date', 'Closing Price']
+            st.dataframe(display_df.head(10), use_container_width=True)
 
-            # 3. PROPHET ENGINE
+            # Prophet Engine
+            # Ensure this line is indented exactly 12 spaces (or 3 tabs)
             m = Prophet(daily_seasonality=True)
             m.fit(prophet_df)
             
@@ -58,4 +51,3 @@ if st.button("Generate Forecast"):
             
     except Exception as e:
         st.error(f"An error occurred: {e}")
-        st.write("Debug Info: Ensure your requirements.txt includes 'prophet' and 'yfinance>=0.2.64'")
