@@ -62,8 +62,7 @@ if st.button("Generate Forecast") and ticker:
             
 
                 # --- PROPHET FORECASTING & METRICS ---
-                m = Prophet(daily_seasonality=True).fit(prophet_df)
-                
+                m = Prophet(daily_seasonality=True).fit(prophet_df)                
                 # Predictions for specific time horizons
                 forecast_30 = m.predict(m.make_future_dataframe(periods=30))
                 forecast_6m = m.predict(m.make_future_dataframe(periods=180))
