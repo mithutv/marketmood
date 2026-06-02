@@ -32,7 +32,7 @@ st.markdown("""
 st.title("QuantLens: AI-Driven Financial Forecasting")
 st.markdown("""
     <div style="font-size: 20px; color: #333; margin-bottom: 20px;">
-        <b>Project Scope:</b> This application utilizes Meta's Prophet time-series library to 
+        This application utilizes Meta's Prophet time-series library to 
         analyze historical stock price trends and generate a 30-day predictive forecast for retail investors.
     </div>
 """, unsafe_allow_html=True)
