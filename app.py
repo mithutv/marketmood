@@ -168,7 +168,9 @@ if st.button("Generate Forecast"):
                     status_label = "⚪ Neutral"
 
                 # --- 4. Render Gauge ---
-               gauge_html = f"""
+              # --- 4. Render Meter-Style Gauge ---
+                # Ensure the f-string is properly closed
+                gauge_html = f"""
                 <style>
                 .meter-container {{ 
                     width: 100%; max-width: 300px; margin: 20px auto; 
@@ -183,10 +185,10 @@ if st.button("Generate Forecast"):
                     position: absolute; top: 30px; left: 30px; right: 30px; bottom: 0; 
                     background: white; border-radius: 120px 120px 0 0;
                 }}
-                /* Needle calculation: -90deg is far left, +90deg is far right */
                 .meter-needle {{ 
                     position: absolute; bottom: 0; left: 50%; width: 4px; height: 120px; 
                     background: #333; transform-origin: bottom; 
+                    /* Use a helper variable for the rotation to avoid f-string brace conflicts */
                     transform: rotate({(avg_sentiment * 90)}deg); 
                     transition: transform 0.8s ease-in-out;
                 }}
