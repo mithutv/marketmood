@@ -13,7 +13,7 @@ st.markdown("""
         background-color: #000000;
         color: #FFFFFF;
         font-weight: 800;
-        font-size: 16px;
+        font-size: 24px;
     }
 
     /* Force header labels to center */
