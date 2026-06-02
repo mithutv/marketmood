@@ -3,10 +3,25 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 from prophet import Prophet
-
+st.markdown("""
+    <style>
+    /* Change base font size for the whole app */
+    .stApp {
+        font-size: 18px;
+    }
+    /* Change font size for specific elements */
+    h1 {
+        font-size: 50px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 # --- CONFIG & CACHE ---
 st.title("QuantLens: AI-Driven Financial Forecasting")
-st.caption("Precision predictive modeling for modern investors.")
+st.markdown("""
+    <div style="font-size: 26px; color: #555; margin-bottom: 20px;">
+        Precision predictive modeling for modern investors.
+    </div>
+""", unsafe_allow_html=True)
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker):
