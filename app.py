@@ -83,12 +83,12 @@ if st.button("Generate Forecast"):
             "Date", 
             width="medium",
             # This aligns the content; headers usually follow this
-            alignment="center" 
+            alignment="left" 
         ),
         "Closing Price": st.column_config.NumberColumn(
             "Closing Price", 
             format="$%.2f",
-            alignment="center" 
+            alignment="left" 
         )
     }
 )
