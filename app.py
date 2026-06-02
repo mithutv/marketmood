@@ -80,7 +80,7 @@ if st.button("Generate Forecast") and ticker:
             col4.metric("**1-Year**", f"${price_1y:,.2f}", get_delta_text(price_1y, current_price))
             
             # Graph
-            st.subheader("### Price Projection (Prophet Model)")
+            st.subheader("Price Projection (Prophet Model)")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual', line=dict(color='#000000')))
             fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='1-Year Forecast', line=dict(color='#0000FF', dash='dash')))
