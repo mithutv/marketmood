@@ -85,9 +85,9 @@ if st.button("Generate Forecast"):
                 "Closing Price": st.column_config.NumberColumn("Closing Price", format="$%.2f")
             }
         )
-            display_df = prophet_df.copy()
-            display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d')
-            display_df.columns = ['Date', 'Closing Price']
+        display_df = prophet_df.copy()
+        display_df['ds'] = display_df['ds'].dt.strftime('%Y-%m-%d')
+        display_df.columns = ['Date', 'Closing Price']
             
             st.dataframe(
                 display_df, 
