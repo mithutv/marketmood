@@ -128,6 +128,8 @@ if st.button("Generate Forecast"):
 
 
             # 8. News Section & Sentiment Analysis
+            news = getattr(ticker_obj, 'news', [])
+            st.write(f"DEBUG: Raw news count: {len(news)}")
             from textblob import TextBlob
             st.markdown("### Recent Market News & Sentiment")
             news = getattr(ticker_obj, 'news', [])
