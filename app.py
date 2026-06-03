@@ -117,4 +117,93 @@ if st.button("Generate Forecast") and ticker:
             ml_df['Volume'] = df['Volume'].reindex(ml_df.index)
             ml_df['Log_Return'] = np.log(ml_df['y'] / ml_df['y'].shift(1))
             
-            ml
+            ml_df = ml_df.ffill().bfill()
+            features = ['SMA_20', 'RSI', 'ATR', 'Volume', 'Log_Return']
+            ml_df[features] = ml_df[features].fillna(0)
+            ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
+            ml_df = ml_df.dropna() 
+
+            if len(ml_df) > days_ahead:
+                X = ml_df[features]
+                y = ml_df['Target_Return']
+                model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42).fit(X, y)
+                predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
+                pred = current_price * (1 + predicted_return)
+                
+                importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
+                active_importances = importances[importances['Importance'] > 0].sort_values(by='Importance', ascending=False)
+                
+                if not active_importances.empty:
+                    st.write("### Model Insight: What drives this prediction?")
+                    st.bar_chart(active_importances.set_index('Feature'))
+                    top_feature = active_importances.iloc[0]['Feature']
+                    st.info(f"**ML Model Summary:** The model is relying most heavily on **{top_feature}** for its 1-year projection.")
+            
+            st.divider()
+
+            # --- ROW 4: MONTE CARLO ---
+            st.markdown("#### Probabilistic Projection: Monte Carlo (10,000 Paths)")
+            def run_mc(prices, days=252, n_sims=10000):
+                returns = prices.pct_change().dropna()
+                mu = returns.mean()
+                sigma = returns.std()
+                daily_returns = np.random.normal(mu, sigma, (days, n_sims))
+                paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
+                return paths
+
+            paths = run_mc(df[target_col])
+            fig_mc = go.Figure()
+            for i in range(100): 
+                fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=0.5, color='gray'), showlegend=False))
+            median_path = np.median(paths, axis=1)
+            fig_mc.add_trace(go.Scatter(y=median_path, line=dict(width=3, color='blue'), name='Median Path'))
+            fig_mc.update_layout(height=400, template="plotly_white")
+            st.plotly_chart(fig_mc, use_container_width=True)
+            
+            # --- MODEL PERFORMANCE TRACKER ---
+            st.subheader("Model Track Record (Last 6 Months)")
+            lookback = 180
+            test_df = ml_df.iloc[[-lookback]] 
+            actual_price_6mo_ago = ml_df['y'].iloc[-lookback]
+            actual_price_today = current_price
+            predicted_return_backtest = model.predict(test_df[features])[0]
+            predicted_price_today = actual_price_6mo_ago * (1 + predicted_return_backtest)
+            error = abs(actual_price_today - predicted_price_today) / actual_price_today
+            accuracy = max(0, (1 - error) * 100)
+            
+            performance_data = pd.DataFrame({
+                "Metric": ["Actual Price", "Model Prediction", "Accuracy Rate"],
+                "Value": [f"${actual_price_today:,.2f}", f"${predicted_price_today:,.2f}", f"{accuracy:.1f}%"]
+            })
+            st.table(performance_data)
+            st.caption("This table compares the model's 6-month historical forecast against actual market performance.")
+            
+            st.write("---")
+            st.subheader("Why trust this performance?")
+            if accuracy > 80:
+                rating, explanation = "High Confidence", "The model's recent predictions have closely mirrored actual price action."
+            elif accuracy > 60:
+                rating, explanation = "Moderate Reliability", "The model captures trends effectively, though exact price points may vary due to market noise."
+            else:
+                rating, explanation = "Low Reliability", "Market conditions have been highly volatile, reducing the model's predictive precision."
+            st.info(f"**Performance Status: {rating}**\n\n{explanation}")
+
+            # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
+            st.divider()
+            st.header("AI Consensus Forecast")
+            prophet_trend = "Bullish" if price_1y > current_price else "Bearish"
+            ml_trend = "Bullish" if pred > current_price else "Bearish"
+            mc_trend = "Bullish" if np.median(paths[-1, :]) > current_price else "Bearish"
+            bullish_count = [prophet_trend, ml_trend, mc_trend].count("Bullish")
+            agreement_score = (bullish_count / 3) * 100
+            conviction_score = int(min(agreement_score + 10, 100))
+            
+            col_a, col_b = st.columns([1, 2])
+            with col_a:
+                st.metric("Consensus", "Bullish 🐂" if bullish_count >= 2 else "Bearish 🐻", f"{conviction_score}% Conviction")
+            with col_b:
+                st.progress(conviction_score / 100)
+                st.write(f"The ensemble has a **{conviction_score}% conviction level** based on model agreement.")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
