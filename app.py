@@ -160,19 +160,25 @@ if st.button("Generate Forecast") and ticker:
                 predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
                 pred = current_price * (1 + predicted_return)
                 
-               # 7. MODEL EXPLAINABILITY & CLEAN PLOTTING
+              # 7. MODEL EXPLAINABILITY & CLEAN PLOTTING
                 importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
-                
-                # Filter: Only keep features that actually contributed (Importance > 0)
                 active_importances = importances[importances['Importance'] > 0].sort_values(by='Importance', ascending=False)
                 
                 if not active_importances.empty:
                     st.write("### Model Insight: What drives this prediction?")
-                    # This chart now only shows columns that have signal
                     st.bar_chart(active_importances.set_index('Feature'))
+                    
+                    # --- DYNAMIC SUMMARY ---
+                    top_feature = active_importances.iloc[0]['Feature']
+                    st.info(f"""
+                    **ML Model Summary:** The model is currently relying most heavily on **{top_feature}** to determine its 1-year projection. 
+                    
+                    * **What this means:** The model has identified that changes in **{top_feature}** historically correlate with price movements for {ticker}.
+                    * **Utility:** By analyzing these patterns, the model attempts to map current 
+                        technical conditions to historical outcomes.
+                    """)
                 else:
-                    # Fallback if the model finds absolutely no signal
-                    st.info("The model could not identify significant patterns in the current features.")
+                    st.info("The model could not identify significant predictive patterns in the current features.")
             
             st.divider()
 
