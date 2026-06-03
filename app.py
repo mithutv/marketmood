@@ -36,7 +36,7 @@ st.markdown("""
 # Header & Scope Note
 st.title("Marketmood: AI-Driven Financial Forecasting")
 st.markdown("""
-This application analyzes **4 years of historical price action** to provide a multi-dimensional forecast:
+This application analyzes **historical price action since 2020** to provide a multi-dimensional forecast:
 * **Trend Projection:** Uses **Meta's Prophet** for seasonal time-series analysis.
 * **Pattern Predictor:** Uses a **Random Forest Regressor** to identify technical indicator signals (SMA, RSI).
 * **Risk Assessment:** Uses a **Monte Carlo Simulation** to map potential 1000-day price volatility.
@@ -51,7 +51,7 @@ ticker = st_searchbox(search_tickers, placeholder="Enter symbol or company name 
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker): 
-    return yf.download(ticker, period="5y", threads=False, multi_level_index=False)
+    return yf.download(ticker, period="10y", threads=False, multi_level_index=False)
 
 if st.button("Generate Forecast") and ticker:
     try:
@@ -63,14 +63,16 @@ if st.button("Generate Forecast") and ticker:
             target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
             prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
             prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
-            four_years_ago = pd.Timestamp.now() - pd.DateOffset(years=4)
-            prophet_df = prophet_df[prophet_df['ds'] >= four_years_ago].dropna()
+            
+            # --- FILTER DATA FROM 2020 ---
+            start_date = pd.Timestamp('2020-01-01')
+            prophet_df = prophet_df[prophet_df['ds'] >= start_date].dropna()
             current_price = prophet_df['y'].iloc[-1]
 
             # Prophet Logic
             m = Prophet(daily_seasonality=True).fit(prophet_df)
             forecast_30 = m.predict(m.make_future_dataframe(periods=30))
-            forecast_6m = m.predict(m.make_future_dataframe(periods=180)) # Calculate 6-month
+            forecast_6m = m.predict(m.make_future_dataframe(periods=180))
             forecast_1y = m.predict(m.make_future_dataframe(periods=365))
             
             # Define the prices
@@ -90,9 +92,6 @@ if st.button("Generate Forecast") and ticker:
             cols[3].metric("1-Year", f"${price_1y:,.2f}", f"{delta_1y:+.2f}")
             st.divider()
 
-           
-     
-
             # --- ROW 2: TREND PROJECTION ---
             st.markdown("#### Trend Projection (Prophet)")
             fig = go.Figure()
@@ -100,13 +99,13 @@ if st.button("Generate Forecast") and ticker:
             fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='Forecast'))
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
-            st.info(f"**Prophet Summary:** Based on 4 years of history, the model projects a 1-year target of **${price_1y:,.2f}**.")
+            st.info(f"**Prophet Summary:** Based on history since 2020, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
             # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
-            days_ahead = 252 # Define this clearly at the top of the block
+            days_ahead = 252 
             
             # 1. Technical Indicators
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
@@ -115,9 +114,9 @@ if st.button("Generate Forecast") and ticker:
             loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
-            ml_df['ATR'] = (df['High'] - df['Low']).rolling(window=14, min_periods=1).mean()
+            ml_df['ATR'] = (df['High'] - df['Low']).reindex(ml_df.index).rolling(window=14, min_periods=1).mean()
             
-            # 2. Metadata (Try-Except prevents crashes)
+            # 2. Metadata
             try:
                 ticker_obj = yf.Ticker(ticker)
                 info = ticker_obj.fast_info
@@ -136,14 +135,13 @@ if st.button("Generate Forecast") and ticker:
             features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
             ml_df[features] = ml_df[features].fillna(0)
 
-            # 4. Target Calculation (Predicting Returns vs Price)
+            # 4. Target Calculation
             ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
             ml_df = ml_df.dropna()
 
             if len(ml_df) > days_ahead:
                 X = ml_df[features]
                 y = ml_df['Target_Return']
-                
                 model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
                 predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
                 pred = current_price * (1 + predicted_return)
@@ -165,45 +163,30 @@ if st.button("Generate Forecast") and ticker:
             
             def run_mc(prices, days=252, n_sims=10000):
                 returns = prices.pct_change().dropna()
-                # Calculate daily drift and volatility
                 mu = returns.mean()
                 sigma = returns.std()
-                
-                # Generate random daily returns for all paths at once
                 daily_returns = np.random.normal(mu, sigma, (days, n_sims))
-                # Create the simulation paths
                 paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
                 return paths
 
             paths = run_mc(prophet_df['y'])
-            
-            # Plot only 100 paths to keep the UI fast, while keeping 10,000 for the stats
             fig_mc = go.Figure()
             for i in range(100): 
                 fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=0.5, color='gray'), showlegend=False))
-            
-            # Add median path
             median_path = np.median(paths, axis=1)
             fig_mc.add_trace(go.Scatter(y=median_path, line=dict(width=3, color='blue'), name='Median Path'))
-            
             fig_mc.update_layout(height=400, template="plotly_white")
             st.plotly_chart(fig_mc, use_container_width=True)
             
-            # Risk Metrics
             st.warning(f"**Monte Carlo Summary:** Across 10,000 simulations, the **Median Projected Price** is **${np.median(paths[-1, :]):,.2f}**.")
             st.write(f"**Confidence Interval (95%):** Between **${np.percentile(paths[-1, :], 2.5):,.2f}** and **${np.percentile(paths[-1, :], 97.5):,.2f}**.")
-
 
             # --- ROW 5: FINAL CONSENSUS ---
             st.divider()
             st.header("AI Consensus Forecast")
-            
-            # Determine direction for each model
             prophet_trend = "Bullish" if price_1y > current_price else "Bearish"
             ml_trend = "Bullish" if pred > current_price else "Bearish"
             mc_trend = "Bullish" if np.median(paths[-1, :]) > current_price else "Bearish"
-            
-            # Count the "Bullish" signals
             bullish_count = [prophet_trend, ml_trend, mc_trend].count("Bullish")
             
             col_a, col_b = st.columns([1, 3])
@@ -211,16 +194,11 @@ if st.button("Generate Forecast") and ticker:
                 if bullish_count >= 2:
                     st.metric("Consensus", "Bullish 🐂", delta="Strong Buy")
                 else:
-                        st.metric("Consensus", "Bearish 🐻", delta="Caution")
-            
+                    st.metric("Consensus", "Bearish 🐻", delta="Caution")
             with col_b:
-                st.write(f"Based on the integration of all models, the consensus is **{bullish_count}/3 indicators favoring a bullish outlook**. "
-                         "This ensemble approach balances long-term seasonal trends (Prophet) with short-term technical patterns (ML) "
-                         "and historical risk probability (Monte Carlo).")
+                st.write(f"Based on the integration of all models, the consensus is **{bullish_count}/3 indicators favoring a bullish outlook**.")
             
-            # Mandatory Disclaimer
-            st.caption("Disclaimer: This consensus is generated by AI models based on historical data. "
-                       "It does not constitute financial advice. Always perform your own due diligence before trading.")
+            st.caption("Disclaimer: This consensus is generated by AI models based on historical data. Perform your own due diligence.")
 
     except Exception as e:
         st.error(f"Error: {e}")
