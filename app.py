@@ -20,9 +20,8 @@ st.set_page_config(page_title="Marketmood", layout="centered")
 
 st.markdown("""
     <style>
-    /* Targeting the Generate Forecast button */
     div.stButton > button:first-child {
-        background-color: #007BFF !important; /* Force Blue */
+        background-color: #007BFF !important;
         color: white !important;
         border: none !important;
         padding: 10px 24px !important;
@@ -105,86 +104,44 @@ if st.button("Generate Forecast") and ticker:
            # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
-            days_ahead = 252 # We target a 1-year horizon (252 trading days in a year)
+            days_ahead = 252 
             
-            # 1. TECHNICAL INDICATORS (Momentum & Volatility)
-            # SMA_20: Captures the 'trend direction' over the last month.
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
-            
-            # RSI (Relative Strength Index): Detects overbought/oversold conditions (0-100 scale).
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
-            
-            # ATR (Average True Range): Measures 'market volatility'—how much the stock swings daily.
-            # We reindex to ensure dates align perfectly with the price history.
             ml_df['ATR'] = (df['High'] - df['Low']).reindex(ml_df.index).rolling(window=14, min_periods=1).mean()
-            
-            # 2. MARKET SIGNAL FEATURES (Historical Momentum)
-            # Volume: Investors trade more heavily on conviction; volume spikes often precede price moves.
             ml_df['Volume'] = df['Volume'].reindex(ml_df.index)
-            
-            # Log_Return: Normalizes price changes. Log returns are statistically 'stationary', 
-            # meaning they are better for ML models to learn from than raw dollar prices.
             ml_df['Log_Return'] = np.log(ml_df['y'] / ml_df['y'].shift(1))
-
-            # 3. DATA CLEANING
-            # Fill gaps caused by rolling windows or missing dates with the nearest available data.
-            ml_df = ml_df.ffill().bfill()
             
-            # Define our input features (X). These are the 'clues' the model uses to guess the future.
+            ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'Volume', 'Log_Return']
             ml_df[features] = ml_df[features].fillna(0)
-
-            # 4. TARGET CALCULATION (The 'Label')
-            # We want to predict the % return 1 year (252 days) from now.
-            # .shift(-days_ahead) 'looks into the future' to label our historical data 
-            # with what actually happened later.
             ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
-            ml_df = ml_df.dropna() # Drop rows where we don't have a future target
+            ml_df = ml_df.dropna() 
 
             if len(ml_df) > days_ahead:
                 X = ml_df[features]
                 y = ml_df['Target_Return']
-                
-                # 5. MODEL TRAINING
-                # Random Forest: An ensemble of decision trees. It captures non-linear relationships 
-                # (e.g., if RSI > 70 AND Volume is high, then price usually drops).
-                # max_depth=10 prevents the model from just 'memorizing' data (overfitting).
                 model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42).fit(X, y)
-                
-                # 6. PREDICTION
-                # We predict the future return using the most recent data (the last row).
                 predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
                 pred = current_price * (1 + predicted_return)
                 
-              # 7. MODEL EXPLAINABILITY & CLEAN PLOTTING
                 importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
                 active_importances = importances[importances['Importance'] > 0].sort_values(by='Importance', ascending=False)
                 
                 if not active_importances.empty:
                     st.write("### Model Insight: What drives this prediction?")
                     st.bar_chart(active_importances.set_index('Feature'))
-                    
-                    # --- DYNAMIC SUMMARY ---
                     top_feature = active_importances.iloc[0]['Feature']
-                    st.info(f"""
-                    **ML Model Summary:** The model is currently relying most heavily on **{top_feature}** to determine its 1-year projection. 
-                    
-                    * **What this means:** The model has identified that changes in **{top_feature}** historically correlate with price movements for {ticker}.
-                    * **Utility:** By analyzing these patterns, the model attempts to map current 
-                        technical conditions to historical outcomes.
-                    """)
-                else:
-                    st.info("The model could not identify significant predictive patterns in the current features.")
+                    st.info(f"**ML Model Summary:** The model is relying most heavily on **{top_feature}** for its 1-year projection.")
             
             st.divider()
 
-            # --- ROW 4: PROBABILISTIC PROJECTION (MONTE CARLO) ---
+            # --- ROW 4: MONTE CARLO ---
             st.markdown("#### Probabilistic Projection: Monte Carlo (10,000 Paths)")
-            
             def run_mc(prices, days=252, n_sims=10000):
                 returns = prices.pct_change().dropna()
                 mu = returns.mean()
@@ -193,9 +150,7 @@ if st.button("Generate Forecast") and ticker:
                 paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
                 return paths
 
-            # Using full df to capture long-term historical volatility for the MC simulation
             paths = run_mc(df[target_col])
-            
             fig_mc = go.Figure()
             for i in range(100): 
                 fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=0.5, color='gray'), showlegend=False))
@@ -204,89 +159,8 @@ if st.button("Generate Forecast") and ticker:
             fig_mc.update_layout(height=400, template="plotly_white")
             st.plotly_chart(fig_mc, use_container_width=True)
             
-            st.warning(f"**Monte Carlo Summary:** Across 10,000 simulations, the **Median Projected Price** is **${np.median(paths[-1, :]):,.2f}**.")
-            st.write(f"**Confidence Interval (95%):** Between **${np.percentile(paths[-1, :], 2.5):,.2f}** and **${np.percentile(paths[-1, :], 97.5):,.2f}**.")
-
-           
-             # --- MODEL PERFORMANCE TRACKER ---
+            # --- MODEL PERFORMANCE TRACKER ---
             st.subheader("Model Track Record (Last 6 Months)")
-            
-            # 1. Calculate what the model would have predicted 6 months ago
-            # We look back 180 trading days
             lookback = 180
             test_df = ml_df.iloc[[-lookback]] 
-            actual_price_6mo_ago = ml_df['y'].iloc[-lookback]
-            actual_price_today = current_price
-            
-            # Predict based on features from 6 months ago
-            predicted_return_backtest = model.predict(test_df[features])[0]
-            predicted_price_today = actual_price_6mo_ago * (1 + predicted_return_backtest)
-            
-            # 2. Calculate Accuracy
-            error = abs(actual_price_today - predicted_price_today) / actual_price_today
-            accuracy = max(0, (1 - error) * 100)
-            
-            # 3. Display as a Table
-            performance_data = pd.DataFrame({
-                "Metric": ["Actual Price", "Model Prediction", "Accuracy Rate"],
-                "Value": [f"${actual_price_today:,.2f}", f"${predicted_price_today:,.2f}", f"{accuracy:.1f}%"]
-            })
-            st.table(performance_data)
-            
-            st.caption("This table compares the model's 6-month historical forecast against actual market performance.")
-            # --- ENHANCED TRUST SUMMARY ---
-        st.write("---")
-        st.subheader("Why trust this performance?")
-        
-        # Determine sentiment for the user
-        if accuracy > 80:
-            rating = "High Confidence"
-            explanation = "The model's recent predictions have closely mirrored actual price action."
-        elif accuracy > 60:
-            rating = "Moderate Reliability"
-            explanation = "The model captures trends effectively, though exact price points may vary due to market noise."
-        else:
-            rating = "Low Reliability"
-            explanation = "Market conditions have been highly volatile, reducing the model's predictive precision. Use as a directional guide only."
-            
-        st.info(f"**Performance Status: {rating}**\n\n{explanation} The accuracy rate represents a 'Backtest'—where we asked the model to predict today's price using only data from 6 months ago. This helps you understand if the current AI logic is 'in sync' with recent market cycles.")
-            
-            # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
-            st.divider()
-            st.header("AI Consensus Forecast")
-            
-            # Determine direction for each model
-            prophet_trend = "Bullish" if price_1y > current_price else "Bearish"
-            ml_trend = "Bullish" if pred > current_price else "Bearish"
-            mc_trend = "Bullish" if np.median(paths[-1, :]) > current_price else "Bearish"
-            
-            # Calculate signals
-            bullish_count = [prophet_trend, ml_trend, mc_trend].count("Bullish")
-            
-            # --- CALCULATE CONVICTION SCORE ---
-            agreement_score = (bullish_count / 3) * 100
-            
-            # Calculate return magnitude
-            avg_projected_return = ((price_1y + pred + np.median(paths[-1, :])) / (current_price * 3)) - 1
-            magnitude_bonus = min(max(avg_projected_return * 100, 0), 20) 
-            
-            # SUM and CLAMP: Ensure it never goes above 100
-            conviction_score = int(min(agreement_score + magnitude_bonus, 100))
-            
-            # Display Consensus
-            col_a, col_b = st.columns([1, 2])
-            with col_a:
-                if bullish_count >= 2:
-                    st.metric("Consensus", "Bullish 🐂", f"{conviction_score}% Conviction")
-                else:
-                    st.metric("Consensus", "Bearish 🐻", f"{conviction_score}% Conviction")
-            
-            with col_b:
-                # Use the clamped conviction_score / 100 to stay within [0, 1]
-                st.progress(conviction_score / 100)
-                st.write(f"The ensemble has a **{conviction_score}% conviction level** based on model agreement and projected upside.")
-            
-          
-
-    except Exception as e:
-        st.error(f"Error: {e}")
+            actual_price_6mo_ago = ml
