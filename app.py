@@ -35,9 +35,11 @@ st.markdown("""
 
 # Header & Scope Note
 st.title("Marketmood: AI-Driven Financial Forecasting")
+st.subheader("Ensemble-based predictive analytics for the modern investor.")
+st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
 # --- SCOPE NOTE / ABOUT SECTION ---
-with st.expander("ℹ️ About Marketmood: How it works & Disclaimer"):
+with st.expander("🛈 About Marketmood: How it works & Disclaimer"):
     st.markdown("""
     Marketmood is an ensemble-based financial forecasting suite designed to bridge the gap 
     between complex machine learning and actionable market insights.
