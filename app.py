@@ -35,12 +35,26 @@ st.markdown("""
 
 # Header & Scope Note
 st.title("Marketmood: AI-Driven Financial Forecasting")
-st.markdown("""
-This application analyzes **historical price action since 2020** to provide a multi-dimensional forecast:
-* **Trend Projection:** Uses **Meta's Prophet** for seasonal time-series analysis.
-* **Pattern Predictor:** Uses a **Random Forest Regressor** to identify technical indicator signals (SMA, RSI).
-* **Risk Assessment:** Uses a **Monte Carlo Simulation** to map potential 1000-day price volatility.
-""")
+
+# --- SCOPE NOTE / ABOUT SECTION ---
+with st.expander("ℹ️ About Marketmood: How it works & Disclaimer"):
+    st.markdown("""
+    Marketmood is an ensemble-based financial forecasting suite designed to bridge the gap 
+    between complex machine learning and actionable market insights.
+
+    *   **Our Objective:** To provide data-driven market context that empowers you to make 
+        more informed investment decisions.
+    *   **The Ensemble Engine:** We synthesize three distinct AI methodologies—**Meta’s Prophet** 
+        for seasonality, **Random Forest** for pattern recognition, and **Monte Carlo** 
+        for risk assessment—to ensure no single model bias dominates our projections.
+    *   **Data Integrity:** We rely on verified historical market data from 2020 onward, 
+        prioritizing data quality to ensure our projections remain consistent and relevant 
+        to current market cycles.
+    *   **Your Responsibility:** Our forecasts are analytical tools, not financial advice. 
+        We encourage you to use these insights as a starting point for your own rigorous 
+        due diligence.
+    """)
+
 
 def search_tickers(searchterm: str):
     if not searchterm: return []
