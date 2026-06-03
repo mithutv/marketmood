@@ -160,19 +160,38 @@ if st.button("Generate Forecast") and ticker:
             
             st.divider()
 
-            # --- ROW 4: MONTE CARLO ---
-            st.markdown("#### Probabilistic Projection: Monte Carlo")
-            def run_mc(prices, days=1000):
-                returns = prices.pct_change().dropna()
-                daily = np.random.normal(returns.mean(), returns.std(), (days, 50))
-                return prices.iloc[-1] * (1 + daily).cumprod(axis=0)
+            # --- ROW 4: PROBABILISTIC PROJECTION (MONTE CARLO) ---
+            st.markdown("#### Probabilistic Projection: Monte Carlo (10,000 Paths)")
             
+            def run_mc(prices, days=252, n_sims=10000):
+                returns = prices.pct_change().dropna()
+                # Calculate daily drift and volatility
+                mu = returns.mean()
+                sigma = returns.std()
+                
+                # Generate random daily returns for all paths at once
+                daily_returns = np.random.normal(mu, sigma, (days, n_sims))
+                # Create the simulation paths
+                paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
+                return paths
+
             paths = run_mc(prophet_df['y'])
+            
+            # Plot only 100 paths to keep the UI fast, while keeping 10,000 for the stats
             fig_mc = go.Figure()
-            for i in range(50): fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=1), showlegend=False))
-            fig_mc.update_layout(height=400)
+            for i in range(100): 
+                fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=0.5, color='gray'), showlegend=False))
+            
+            # Add median path
+            median_path = np.median(paths, axis=1)
+            fig_mc.add_trace(go.Scatter(y=median_path, line=dict(width=3, color='blue'), name='Median Path'))
+            
+            fig_mc.update_layout(height=400, template="plotly_white")
             st.plotly_chart(fig_mc, use_container_width=True)
-            st.warning(f"**Monte Carlo Summary:** The **Median Projected Price** at day 1000 is **${np.median(paths[-1, :]):,.2f}**.")
+            
+            # Risk Metrics
+            st.warning(f"**Monte Carlo Summary:** Across 10,000 simulations, the **Median Projected Price** is **${np.median(paths[-1, :]):,.2f}**.")
+            st.write(f"**Confidence Interval (95%):** Between **${np.percentile(paths[-1, :], 2.5):,.2f}** and **${np.percentile(paths[-1, :], 97.5):,.2f}**.")
 
 
             # --- ROW 5: FINAL CONSENSUS ---
