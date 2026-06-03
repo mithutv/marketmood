@@ -219,15 +219,15 @@ if st.button("Generate Forecast") and ticker:
             # Calculate signals
             bullish_count = [prophet_trend, ml_trend, mc_trend].count("Bullish")
             
-            # --- CALCULATE CONVICTION SCORE (0 to 100%) ---
-            # 1. Base score on how many models agree (0%, 33%, 66%, 100%)
+            # --- CALCULATE CONVICTION SCORE ---
             agreement_score = (bullish_count / 3) * 100
             
-            # 2. Add 'Magnitude' bonus: if the average projected return is high, increase conviction
+            # Calculate return magnitude
             avg_projected_return = ((price_1y + pred + np.median(paths[-1, :])) / (current_price * 3)) - 1
-            magnitude_bonus = min(max(avg_projected_return * 100, 0), 20) # Max 20% bonus
+            magnitude_bonus = min(max(avg_projected_return * 100, 0), 20) 
             
-            conviction_score = int(agreement_score + magnitude_bonus)
+            # SUM and CLAMP: Ensure it never goes above 100
+            conviction_score = int(min(agreement_score + magnitude_bonus, 100))
             
             # Display Consensus
             col_a, col_b = st.columns([1, 2])
@@ -238,9 +238,11 @@ if st.button("Generate Forecast") and ticker:
                     st.metric("Consensus", "Bearish 🐻", f"{conviction_score}% Conviction")
             
             with col_b:
-                # Add a progress bar for the conviction score
+                # Use the clamped conviction_score / 100 to stay within [0, 1]
                 st.progress(conviction_score / 100)
                 st.write(f"The ensemble has a **{conviction_score}% conviction level** based on model agreement and projected upside.")
+            
+          
 
     except Exception as e:
         st.error(f"Error: {e}")
