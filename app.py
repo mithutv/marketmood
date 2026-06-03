@@ -20,8 +20,9 @@ st.set_page_config(page_title="Marketmood", layout="centered")
 
 st.markdown("""
     <style>
+    /* Targeting the Generate Forecast button */
     div.stButton > button:first-child {
-        background-color: #007BFF !important;
+        background-color: #007BFF !important; /* Force Blue */
         color: white !important;
         border: none !important;
         padding: 10px 24px !important;
@@ -101,7 +102,7 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on history since 2020, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-           # --- ROW 3: PATTERN PREDICTOR (ML) ---
+            # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             days_ahead = 252 
@@ -116,51 +117,4 @@ if st.button("Generate Forecast") and ticker:
             ml_df['Volume'] = df['Volume'].reindex(ml_df.index)
             ml_df['Log_Return'] = np.log(ml_df['y'] / ml_df['y'].shift(1))
             
-            ml_df = ml_df.ffill().bfill()
-            features = ['SMA_20', 'RSI', 'ATR', 'Volume', 'Log_Return']
-            ml_df[features] = ml_df[features].fillna(0)
-            ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
-            ml_df = ml_df.dropna() 
-
-            if len(ml_df) > days_ahead:
-                X = ml_df[features]
-                y = ml_df['Target_Return']
-                model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42).fit(X, y)
-                predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
-                pred = current_price * (1 + predicted_return)
-                
-                importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
-                active_importances = importances[importances['Importance'] > 0].sort_values(by='Importance', ascending=False)
-                
-                if not active_importances.empty:
-                    st.write("### Model Insight: What drives this prediction?")
-                    st.bar_chart(active_importances.set_index('Feature'))
-                    top_feature = active_importances.iloc[0]['Feature']
-                    st.info(f"**ML Model Summary:** The model is relying most heavily on **{top_feature}** for its 1-year projection.")
-            
-            st.divider()
-
-            # --- ROW 4: MONTE CARLO ---
-            st.markdown("#### Probabilistic Projection: Monte Carlo (10,000 Paths)")
-            def run_mc(prices, days=252, n_sims=10000):
-                returns = prices.pct_change().dropna()
-                mu = returns.mean()
-                sigma = returns.std()
-                daily_returns = np.random.normal(mu, sigma, (days, n_sims))
-                paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
-                return paths
-
-            paths = run_mc(df[target_col])
-            fig_mc = go.Figure()
-            for i in range(100): 
-                fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=0.5, color='gray'), showlegend=False))
-            median_path = np.median(paths, axis=1)
-            fig_mc.add_trace(go.Scatter(y=median_path, line=dict(width=3, color='blue'), name='Median Path'))
-            fig_mc.update_layout(height=400, template="plotly_white")
-            st.plotly_chart(fig_mc, use_container_width=True)
-            
-            # --- MODEL PERFORMANCE TRACKER ---
-            st.subheader("Model Track Record (Last 6 Months)")
-            lookback = 180
-            test_df = ml_df.iloc[[-lookback]] 
-            actual_price_6mo_ago = ml
+            ml
