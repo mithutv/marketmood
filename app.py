@@ -160,18 +160,19 @@ if st.button("Generate Forecast") and ticker:
                 predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
                 pred = current_price * (1 + predicted_return)
                 
-                # 7. MODEL EXPLAINABILITY
-                # feature_importances_ tells us which of our inputs (e.g., ATR vs RSI)
-                # actually helped the model make its decision.
-                st.write("### Model Insight: What drives this prediction?")
+               # 7. MODEL EXPLAINABILITY & CLEAN PLOTTING
                 importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
-                st.bar_chart(importances.set_index('Feature').sort_values(by='Importance', ascending=False))
                 
-                col_ml1, col_ml2 = st.columns([1, 2])
-                col_ml1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                col_ml2.caption("Random Forest Model: Estimating price using dynamic historical features.")
-            else:
-                st.warning("Insufficient historical data to train the ML model.")
+                # Filter: Only keep features that actually contributed (Importance > 0)
+                active_importances = importances[importances['Importance'] > 0].sort_values(by='Importance', ascending=False)
+                
+                if not active_importances.empty:
+                    st.write("### Model Insight: What drives this prediction?")
+                    # This chart now only shows columns that have signal
+                    st.bar_chart(active_importances.set_index('Feature'))
+                else:
+                    # Fallback if the model finds absolutely no signal
+                    st.info("The model could not identify significant patterns in the current features.")
             
             st.divider()
 
