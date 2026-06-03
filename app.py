@@ -169,7 +169,9 @@ if st.button("Generate Forecast") and ticker:
                 paths = prices.iloc[-1] * (1 + daily_returns).cumprod(axis=0)
                 return paths
 
-            paths = run_mc(prophet_df['y'])
+            # Using full df to capture long-term historical volatility for the MC simulation
+            paths = run_mc(df[target_col])
+            
             fig_mc = go.Figure()
             for i in range(100): 
                 fig_mc.add_trace(go.Scatter(y=paths[:, i], line=dict(width=0.5, color='gray'), showlegend=False))
