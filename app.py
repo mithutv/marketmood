@@ -234,6 +234,22 @@ if st.button("Generate Forecast") and ticker:
             st.table(performance_data)
             
             st.caption("This table compares the model's 6-month historical forecast against actual market performance.")
+            # --- ENHANCED TRUST SUMMARY ---
+        st.write("---")
+        st.subheader("Why trust this performance?")
+        
+        # Determine sentiment for the user
+        if accuracy > 80:
+            rating = "High Confidence"
+            explanation = "The model's recent predictions have closely mirrored actual price action."
+        elif accuracy > 60:
+            rating = "Moderate Reliability"
+            explanation = "The model captures trends effectively, though exact price points may vary due to market noise."
+        else:
+            rating = "Low Reliability"
+            explanation = "Market conditions have been highly volatile, reducing the model's predictive precision. Use as a directional guide only."
+            
+        st.info(f"**Performance Status: {rating}**\n\n{explanation} The accuracy rate represents a 'Backtest'—where we asked the model to predict today's price using only data from 6 months ago. This helps you understand if the current AI logic is 'in sync' with recent market cycles.")
             
             # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
             st.divider()
