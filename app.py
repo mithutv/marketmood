@@ -102,57 +102,74 @@ if st.button("Generate Forecast") and ticker:
             st.info(f"**Prophet Summary:** Based on history since 2020, the model projects a 1-year target of **${price_1y:,.2f}**.")
             st.divider()
 
-            # --- ROW 3: PATTERN PREDICTOR (ML) ---
+           # --- ROW 3: PATTERN PREDICTOR (ML) ---
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
-            days_ahead = 252 
+            days_ahead = 252 # We target a 1-year horizon (252 trading days in a year)
             
-            # 1. Technical Indicators
+            # 1. TECHNICAL INDICATORS (Momentum & Volatility)
+            # SMA_20: Captures the 'trend direction' over the last month.
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
+            
+            # RSI (Relative Strength Index): Detects overbought/oversold conditions (0-100 scale).
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
             rs = gain / loss.replace(0, 0.001)
             ml_df['RSI'] = 100 - (100 / (1 + rs))
+            
+            # ATR (Average True Range): Measures 'market volatility'—how much the stock swings daily.
+            # We reindex to ensure dates align perfectly with the price history.
             ml_df['ATR'] = (df['High'] - df['Low']).reindex(ml_df.index).rolling(window=14, min_periods=1).mean()
             
-            # 2. Metadata
-            try:
-                ticker_obj = yf.Ticker(ticker)
-                info = ticker_obj.fast_info
-                ml_df['PE_Ratio'] = info.get('trailingPE') or 20.0
-                news = ticker_obj.news
-                if news and isinstance(news, list):
-                    ml_df['Sentiment'] = np.mean([TextBlob(n.get('title', '')).sentiment.polarity for n in news[:3]])
-                else:
-                    ml_df['Sentiment'] = 0.0
-            except:
-                ml_df['PE_Ratio'] = 20.0
-                ml_df['Sentiment'] = 0.0
+            # 2. MARKET SIGNAL FEATURES (Historical Momentum)
+            # Volume: Investors trade more heavily on conviction; volume spikes often precede price moves.
+            ml_df['Volume'] = df['Volume'].reindex(ml_df.index)
             
-            # 3. Clean and Train
+            # Log_Return: Normalizes price changes. Log returns are statistically 'stationary', 
+            # meaning they are better for ML models to learn from than raw dollar prices.
+            ml_df['Log_Return'] = np.log(ml_df['y'] / ml_df['y'].shift(1))
+
+            # 3. DATA CLEANING
+            # Fill gaps caused by rolling windows or missing dates with the nearest available data.
             ml_df = ml_df.ffill().bfill()
-            features = ['SMA_20', 'RSI', 'ATR', 'PE_Ratio', 'Sentiment']
+            
+            # Define our input features (X). These are the 'clues' the model uses to guess the future.
+            features = ['SMA_20', 'RSI', 'ATR', 'Volume', 'Log_Return']
             ml_df[features] = ml_df[features].fillna(0)
 
-            # 4. Target Calculation
+            # 4. TARGET CALCULATION (The 'Label')
+            # We want to predict the % return 1 year (252 days) from now.
+            # .shift(-days_ahead) 'looks into the future' to label our historical data 
+            # with what actually happened later.
             ml_df['Target_Return'] = ml_df['y'].pct_change(days_ahead).shift(-days_ahead)
-            ml_df = ml_df.dropna()
+            ml_df = ml_df.dropna() # Drop rows where we don't have a future target
 
             if len(ml_df) > days_ahead:
                 X = ml_df[features]
                 y = ml_df['Target_Return']
-                model = RandomForestRegressor(n_estimators=100, random_state=42).fit(X, y)
+                
+                # 5. MODEL TRAINING
+                # Random Forest: An ensemble of decision trees. It captures non-linear relationships 
+                # (e.g., if RSI > 70 AND Volume is high, then price usually drops).
+                # max_depth=10 prevents the model from just 'memorizing' data (overfitting).
+                model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42).fit(X, y)
+                
+                # 6. PREDICTION
+                # We predict the future return using the most recent data (the last row).
                 predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
                 pred = current_price * (1 + predicted_return)
                 
+                # 7. MODEL EXPLAINABILITY
+                # feature_importances_ tells us which of our inputs (e.g., ATR vs RSI)
+                # actually helped the model make its decision.
                 st.write("### Model Insight: What drives this prediction?")
                 importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
                 st.bar_chart(importances.set_index('Feature').sort_values(by='Importance', ascending=False))
                 
                 col_ml1, col_ml2 = st.columns([1, 2])
                 col_ml1.metric("ML 1-Year Projection", f"${pred:,.2f}", f"{pred - current_price:+.2f}")
-                col_ml2.caption("Random Forest Model: Estimating price using return-based prediction.")
+                col_ml2.caption("Random Forest Model: Estimating price using dynamic historical features.")
             else:
                 st.warning("Insufficient historical data to train the ML model.")
             
