@@ -207,7 +207,35 @@ if st.button("Generate Forecast") and ticker:
             st.warning(f"**Monte Carlo Summary:** Across 10,000 simulations, the **Median Projected Price** is **${np.median(paths[-1, :]):,.2f}**.")
             st.write(f"**Confidence Interval (95%):** Between **${np.percentile(paths[-1, :], 2.5):,.2f}** and **${np.percentile(paths[-1, :], 97.5):,.2f}**.")
 
-           # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
+           
+             # --- MODEL PERFORMANCE TRACKER ---
+            st.subheader("Model Track Record (Last 6 Months)")
+            
+            # 1. Calculate what the model would have predicted 6 months ago
+            # We look back 180 trading days
+            lookback = 180
+            test_df = ml_df.iloc[[-lookback]] 
+            actual_price_6mo_ago = ml_df['y'].iloc[-lookback]
+            actual_price_today = current_price
+            
+            # Predict based on features from 6 months ago
+            predicted_return_backtest = model.predict(test_df[features])[0]
+            predicted_price_today = actual_price_6mo_ago * (1 + predicted_return_backtest)
+            
+            # 2. Calculate Accuracy
+            error = abs(actual_price_today - predicted_price_today) / actual_price_today
+            accuracy = max(0, (1 - error) * 100)
+            
+            # 3. Display as a Table
+            performance_data = pd.DataFrame({
+                "Metric": ["Actual Price", "Model Prediction", "Accuracy Rate"],
+                "Value": [f"${actual_price_today:,.2f}", f"${predicted_price_today:,.2f}", f"{accuracy:.1f}%"]
+            })
+            st.table(performance_data)
+            
+            st.caption("This table compares the model's 6-month historical forecast against actual market performance.")
+            
+            # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
             st.divider()
             st.header("AI Consensus Forecast")
             
