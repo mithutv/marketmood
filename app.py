@@ -279,8 +279,8 @@ with st.container(border=True):
             st.markdown(f"**Sentiment Score: +{sentiment_score}%**")
         else:
             st.write("No recent news found.")
+            
     except Exception:
         st.write("Sentiment analysis currently unavailable.")
 
-    except Exception as e:
-        st.error(f"Error: {e}")
+
