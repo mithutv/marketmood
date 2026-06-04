@@ -222,7 +222,7 @@ if st.button("Generate Forecast") and ticker:
                 rating, explanation = "Low Reliability", "Market conditions have been highly volatile, reducing the model's predictive precision."
             st.info(f"**Performance Status: {rating}**\n\n{explanation}")
 
-           # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
+          # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
             st.divider()
             st.header("AI Consensus Forecast")
             
@@ -252,13 +252,11 @@ if st.button("Generate Forecast") and ticker:
                 for reason in reasons:
                     st.markdown(f"- {reason}")
 
-                # --- NEWS SENTIMENT CARD ---
+            # --- NEWS SENTIMENT CARD (Corrected Indentation) ---
             st.subheader("Market Sentiment (News Analysis)")
             
-            # Use a container to create that "card" feel
             with st.container(border=True):
                 try:
-                    # Fetching headlines (Ensure feedparser is in your requirements.txt)
                     rss_url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"
                     feed = feedparser.parse(rss_url)
                     
@@ -279,8 +277,8 @@ if st.button("Generate Forecast") and ticker:
                         st.markdown(f"**Sentiment Score: {'+' if sentiment_score >= 50 else ''}{sentiment_score}%**")
                     else:
                         st.write("No recent news found.")
+                except Exception:
+                    st.write("Sentiment analysis currently unavailable.")
             
-    except Exception:
-        st.write("Sentiment analysis currently unavailable.")
 
 
