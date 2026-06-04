@@ -221,22 +221,35 @@ if st.button("Generate Forecast") and ticker:
                 rating, explanation = "Low Reliability", "Market conditions have been highly volatile, reducing the model's predictive precision."
             st.info(f"**Performance Status: {rating}**\n\n{explanation}")
 
-            # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
+           # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
             st.divider()
             st.header("AI Consensus Forecast")
+            
+            # Logic for Consensus
             prophet_trend = "Bullish" if price_1y > current_price else "Bearish"
             ml_trend = "Bullish" if pred > current_price else "Bearish"
             mc_trend = "Bullish" if np.median(paths[-1, :]) > current_price else "Bearish"
+            
             bullish_count = [prophet_trend, ml_trend, mc_trend].count("Bullish")
-            agreement_score = (bullish_count / 3) * 100
-            conviction_score = int(min(agreement_score + 10, 100))
+            is_bullish = bullish_count >= 2
+
+            # DYNAMIC REASONING ENGINE
+            reasons = []
+            if prophet_trend == "Bullish": reasons.append("Prophet identifies upward seasonal trends.")
+            if ml_trend == "Bullish": reasons.append("Machine Learning pattern predictors signal growth.")
+            if mc_trend == "Bullish": reasons.append("Monte Carlo simulations lean toward price appreciation.")
+            
+            conviction_score = int(min((bullish_count / 3) * 100 + 10, 100))
             
             col_a, col_b = st.columns([1, 2])
             with col_a:
-                st.metric("Consensus", "Bullish 🐂" if bullish_count >= 2 else "Bearish 🐻", f"{conviction_score}% Conviction")
+                st.metric("Consensus", "Bullish 🐂" if is_bullish else "Bearish 🐻", f"{conviction_score}% Conviction")
             with col_b:
                 st.progress(conviction_score / 100)
-                st.write(f"The ensemble has a **{conviction_score}% conviction level** based on model agreement.")
+                # DISPLAY THE "WHY"
+                st.write(f"**Why this result?**")
+                for reason in reasons:
+                    st.markdown(f"- {reason}")
 
     except Exception as e:
         st.error(f"Error: {e}")
