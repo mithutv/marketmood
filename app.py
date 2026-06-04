@@ -2,6 +2,7 @@ import streamlit as st
 import time
 import yfinance as yf
 import pandas as pd
+import feedparser
 import plotly.graph_objects as go
 from prophet import Prophet
 from streamlit_searchbox import st_searchbox
@@ -174,6 +175,33 @@ if st.button("Generate Forecast") and ticker:
             
             st.divider()
 
+            import feedparser
+
+            # --- NEWS SENTIMENT SECTION ---
+            st.subheader("Market Sentiment (News Analysis)")
+            try:
+                # Use Yahoo Finance RSS feed
+                rss_url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"
+                feed = feedparser.parse(rss_url)
+                
+                if feed.entries:
+                    sentiments = []
+                    st.write("**Recent Headlines:**")
+                    for entry in feed.entries[:5]: # Analyze the top 5 latest headlines
+                        blob = TextBlob(entry.title)
+                        sentiments.append(blob.sentiment.polarity)
+                        # Show the headline with a sentiment-based color
+                        color = "green" if blob.sentiment.polarity > 0 else "red" if blob.sentiment.polarity < 0 else "gray"
+                        st.markdown(f"- :{color}[{entry.title}]")
+                    
+                    # Calculate Average Sentiment
+                    avg_sentiment = sum(sentiments) / len(sentiments)
+                    score_text = "Positive" if avg_sentiment > 0.1 else "Negative" if avg_sentiment < -0.1 else "Neutral"
+                    st.metric("Aggregate News Sentiment", score_text, f"{avg_sentiment:.2f}")
+                else:
+                    st.info("No recent news headlines available for this ticker.")
+            except Exception as e:
+                st.warning("Could not fetch news sentiment at this time.")
             # --- ROW 4: MONTE CARLO ---
             st.markdown("#### Probabilistic Projection: Monte Carlo (10,000 Paths)")
             def run_mc(prices, days=252, n_sims=10000):
