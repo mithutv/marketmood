@@ -174,34 +174,7 @@ if st.button("Generate Forecast") and ticker:
                     st.info(f"**ML Model Summary:** The model is relying most heavily on **{top_feature}** for its 1-year projection.")
             
             st.divider()
-
-            import feedparser
-
-            # --- NEWS SENTIMENT SECTION ---
-            st.subheader("Market Sentiment (News Analysis)")
-            try:
-                # Use Yahoo Finance RSS feed
-                rss_url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"
-                feed = feedparser.parse(rss_url)
-                
-                if feed.entries:
-                    sentiments = []
-                    st.write("**Recent Headlines:**")
-                    for entry in feed.entries[:5]: # Analyze the top 5 latest headlines
-                        blob = TextBlob(entry.title)
-                        sentiments.append(blob.sentiment.polarity)
-                        # Show the headline with a sentiment-based color
-                        color = "green" if blob.sentiment.polarity > 0 else "red" if blob.sentiment.polarity < 0 else "gray"
-                        st.markdown(f"- :{color}[{entry.title}]")
-                    
-                    # Calculate Average Sentiment
-                    avg_sentiment = sum(sentiments) / len(sentiments)
-                    score_text = "Positive" if avg_sentiment > 0.1 else "Negative" if avg_sentiment < -0.1 else "Neutral"
-                    st.metric("Aggregate News Sentiment", score_text, f"{avg_sentiment:.2f}")
-                else:
-                    st.info("No recent news headlines available for this ticker.")
-            except Exception as e:
-                st.warning("Could not fetch news sentiment at this time.")
+            
             # --- ROW 4: MONTE CARLO ---
             st.markdown("#### Probabilistic Projection: Monte Carlo (10,000 Paths)")
             def run_mc(prices, days=252, n_sims=10000):
@@ -278,6 +251,36 @@ if st.button("Generate Forecast") and ticker:
                 st.write(f"**Why this result?**")
                 for reason in reasons:
                     st.markdown(f"- {reason}")
+
+    # --- NEWS SENTIMENT CARD ---
+st.subheader("Market Sentiment (News Analysis)")
+
+# Use a container to create that "card" feel
+with st.container(border=True):
+    try:
+        # Fetching headlines (Ensure feedparser is in your requirements.txt)
+        rss_url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"
+        feed = feedparser.parse(rss_url)
+        
+        if feed.entries:
+            sentiments = []
+            st.markdown(f"**Market Sentiment: ** {'Positive 😋' if sum([TextBlob(e.title).sentiment.polarity for e in feed.entries[:5]]) > 0 else 'Neutral/Negative'}")
+            
+            st.markdown("**Recent Headlines:**")
+            for entry in feed.entries[:5]:
+                blob = TextBlob(entry.title)
+                sentiments.append(blob.sentiment.polarity)
+                st.markdown(f"• {entry.title}")
+            
+            # Convert polarity (-1 to 1) to percentage score (0 to 100)
+            avg_polarity = sum(sentiments) / len(sentiments)
+            sentiment_score = int(((avg_polarity + 1) / 2) * 100)
+            
+            st.markdown(f"**Sentiment Score: +{sentiment_score}%**")
+        else:
+            st.write("No recent news found.")
+    except Exception:
+        st.write("Sentiment analysis currently unavailable.")
 
     except Exception as e:
         st.error(f"Error: {e}")
