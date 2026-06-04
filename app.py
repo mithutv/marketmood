@@ -109,7 +109,6 @@ if st.button("Generate Forecast") and ticker:
             forecast_6m = m.predict(m.make_future_dataframe(periods=180))
             forecast_1y = m.predict(m.make_future_dataframe(periods=365))
             
-            # Define the prices
             price_30 = forecast_30['yhat'].iloc[-1]
             price_6m = forecast_6m['yhat'].iloc[-1]
             price_1y = forecast_1y['yhat'].iloc[-1]
@@ -140,7 +139,6 @@ if st.button("Generate Forecast") and ticker:
             st.markdown("#### Pattern Predictor (ML)")
             ml_df = prophet_df.copy()
             days_ahead = 252 
-            
             ml_df['SMA_20'] = ml_df['y'].rolling(window=20, min_periods=1).mean()
             delta = ml_df['y'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
@@ -150,7 +148,6 @@ if st.button("Generate Forecast") and ticker:
             ml_df['ATR'] = (df['High'] - df['Low']).reindex(ml_df.index).rolling(window=14, min_periods=1).mean()
             ml_df['Volume'] = df['Volume'].reindex(ml_df.index)
             ml_df['Log_Return'] = np.log(ml_df['y'] / ml_df['y'].shift(1))
-            
             ml_df = ml_df.ffill().bfill()
             features = ['SMA_20', 'RSI', 'ATR', 'Volume', 'Log_Return']
             ml_df[features] = ml_df[features].fillna(0)
@@ -163,16 +160,13 @@ if st.button("Generate Forecast") and ticker:
                 model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42).fit(X, y)
                 predicted_return = model.predict(ml_df[features].iloc[[-1]])[0]
                 pred = current_price * (1 + predicted_return)
-                
                 importances = pd.DataFrame({'Feature': features, 'Importance': model.feature_importances_})
                 active_importances = importances[importances['Importance'] > 0].sort_values(by='Importance', ascending=False)
-                
                 if not active_importances.empty:
                     st.write("### Model Insight: What drives this prediction?")
                     st.bar_chart(active_importances.set_index('Feature'))
                     top_feature = active_importances.iloc[0]['Feature']
                     st.info(f"**ML Model Summary:** The model is relying most heavily on **{top_feature}** for its 1-year projection.")
-            
             st.divider()
             
             # --- ROW 4: MONTE CARLO ---
@@ -193,92 +187,47 @@ if st.button("Generate Forecast") and ticker:
             fig_mc.add_trace(go.Scatter(y=median_path, line=dict(width=3, color='blue'), name='Median Path'))
             fig_mc.update_layout(height=400, template="plotly_white")
             st.plotly_chart(fig_mc, use_container_width=True)
-            
-            # --- MODEL PERFORMANCE TRACKER ---
-            st.subheader("Model Track Record (Last 6 Months)")
-            lookback = 180
-            test_df = ml_df.iloc[[-lookback]] 
-            actual_price_6mo_ago = ml_df['y'].iloc[-lookback]
-            actual_price_today = current_price
-            predicted_return_backtest = model.predict(test_df[features])[0]
-            predicted_price_today = actual_price_6mo_ago * (1 + predicted_return_backtest)
-            error = abs(actual_price_today - predicted_price_today) / actual_price_today
-            accuracy = max(0, (1 - error) * 100)
-            
-            performance_data = pd.DataFrame({
-                "Metric": ["Actual Price", "Model Prediction", "Accuracy Rate"],
-                "Value": [f"${actual_price_today:,.2f}", f"${predicted_price_today:,.2f}", f"{accuracy:.1f}%"]
-            })
-            st.table(performance_data)
-            st.caption("This table compares the model's 6-month historical forecast against actual market performance.")
-            
-            st.write("---")
-            st.subheader("Why trust this performance?")
-            if accuracy > 80:
-                rating, explanation = "High Confidence", "The model's recent predictions have closely mirrored actual price action."
-            elif accuracy > 60:
-                rating, explanation = "Moderate Reliability", "The model captures trends effectively, though exact price points may vary due to market noise."
-            else:
-                rating, explanation = "Low Reliability", "Market conditions have been highly volatile, reducing the model's predictive precision."
-            st.info(f"**Performance Status: {rating}**\n\n{explanation}")
 
-          # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
+            # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
             st.divider()
             st.header("AI Consensus Forecast")
-            
-            # Logic for Consensus
             prophet_trend = "Bullish" if price_1y > current_price else "Bearish"
             ml_trend = "Bullish" if pred > current_price else "Bearish"
             mc_trend = "Bullish" if np.median(paths[-1, :]) > current_price else "Bearish"
-            
             bullish_count = [prophet_trend, ml_trend, mc_trend].count("Bullish")
             is_bullish = bullish_count >= 2
-
-            # DYNAMIC REASONING ENGINE
             reasons = []
             if prophet_trend == "Bullish": reasons.append("Prophet identifies upward seasonal trends.")
             if ml_trend == "Bullish": reasons.append("Machine Learning pattern predictors signal growth.")
             if mc_trend == "Bullish": reasons.append("Monte Carlo simulations lean toward price appreciation.")
-            
             conviction_score = int(min((bullish_count / 3) * 100 + 10, 100))
-            
             col_a, col_b = st.columns([1, 2])
             with col_a:
                 st.metric("Consensus", "Bullish 🐂" if is_bullish else "Bearish 🐻", f"{conviction_score}% Conviction")
             with col_b:
                 st.progress(conviction_score / 100)
-                # DISPLAY THE "WHY"
                 st.write(f"**Why this result?**")
                 for reason in reasons:
                     st.markdown(f"- {reason}")
 
-            # --- NEWS SENTIMENT CARD (Corrected Indentation) ---
+            # --- NEWS SENTIMENT ---
             st.subheader("Market Sentiment (News Analysis)")
-            
             with st.container(border=True):
                 try:
                     rss_url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"
                     feed = feedparser.parse(rss_url)
-                    
                     if feed.entries:
-                        sentiments = []
-                        st.markdown(f"**Market Sentiment: ** {'Positive 😋' if sum([TextBlob(e.title).sentiment.polarity for e in feed.entries[:5]]) > 0 else 'Neutral/Negative'}")
-                        
-                        st.markdown("**Recent Headlines:**")
-                        for entry in feed.entries[:5]:
-                            blob = TextBlob(entry.title)
-                            sentiments.append(blob.sentiment.polarity)
-                            st.markdown(f"• {entry.title}")
-                        
-                        # Convert polarity (-1 to 1) to percentage score (0 to 100)
+                        sentiments = [TextBlob(e.title).sentiment.polarity for e in feed.entries[:5]]
                         avg_polarity = sum(sentiments) / len(sentiments)
+                        st.markdown(f"**Market Sentiment: ** {'Positive 😋' if avg_polarity > 0 else 'Neutral/Negative'}")
+                        st.markdown("**Recent Headlines:**")
+                        for entry in feed.entries[:5]: st.markdown(f"• {entry.title}")
                         sentiment_score = int(((avg_polarity + 1) / 2) * 100)
-                        
                         st.markdown(f"**Sentiment Score: {'+' if sentiment_score >= 50 else ''}{sentiment_score}%**")
                     else:
                         st.write("No recent news found.")
                 except Exception:
                     st.write("Sentiment analysis currently unavailable.")
-            
 
-
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
