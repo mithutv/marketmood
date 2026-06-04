@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
@@ -15,6 +16,22 @@ try:
 except LookupError:
     nltk.download('punkt')
 
+@st.cache_data(ttl=3600) # Cache search results for 1 hour
+def search_tickers(searchterm: str):
+    # CRITICAL: Only search if the user has typed at least 3 characters
+    # This prevents the app from searching for "A", "AA", "AAP"...
+    if not searchterm or len(searchterm) < 3: 
+        return []
+    
+    # Add a tiny delay to avoid rapid-fire requests
+    time.sleep(0.2) 
+    
+    try:
+        results = yf.Search(searchterm).quotes
+        return [(f"{q.get('shortname', '')} ({q.get('symbol', '')})", q.get('symbol', '')) 
+                for q in results if 'symbol' in q]
+    except Exception:
+        return []
 # Page Config
 st.set_page_config(page_title="Marketmood", layout="centered")
 
