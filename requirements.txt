@@ -10,3 +10,4 @@ nltk
 textblob
 numpy
 scikit-learn
+feedparser
