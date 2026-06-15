@@ -150,13 +150,13 @@ if st.button("Generate Forecast") and ticker:
 
             cols = st.columns(4)
             cols[0].metric("Current Price", f"${current_price:,.2f}")
-            cols[1].metric("30-Day", f"${price_30:,.2f}", f"{delta_30:+.2f}")
-            cols[2].metric("6-Month", f"${price_6m:,.2f}", f"{delta_6m:+.2f}")
-            cols[3].metric("1-Year", f"${price_1y:,.2f}", f"{delta_1y:+.2f}")
+            cols[1].metric("Forecast — 30D", f"${price_30:,.2f}", f"{delta_30:+.2f}")
+            cols[2].metric("Forecast — 6M", f"${price_6m:,.2f}", f"{delta_6m:+.2f}")
+            cols[3].metric("Forecast — 1Y", f"${price_1y:,.2f}", f"{delta_1y:+.2f}")
             st.divider()
 
             # --- ROW 2: TREND PROJECTION ---
-            st.markdown("#### Trend Projection (Prophet)")
+            st.markdown("#### Market Trend & Forecast")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual'))
             fig.add_trace(go.Scatter(x=forecast_1y['ds'], y=forecast_1y['yhat'], name='Forecast'))
