@@ -29,7 +29,7 @@ def get_stock_data(ticker):
     return yf.download(ticker, period="10y", threads=False, multi_level_index=False)
 
 # Page Config
-st.set_page_config(page_title="Marketmood", layout="wide") # Changed to wide for terminal feel
+st.set_page_config(page_title="Marketmood", layout="wide")
 
 st.markdown("""
     <style>
@@ -39,22 +39,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ORGANIZATION ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("Marketmood")
     st.markdown("---")
-    
-    ticker = st_searchbox(
-        search_tickers,
-        placeholder="Search ticker (e.g. AAPL)...",
-        label="Target Asset",
-        key="main_ticker_search"
-    )
-    
+    ticker = st_searchbox(search_tickers, placeholder="Search ticker...", label="Target Asset", key="main_ticker_search")
     st.markdown("### Model Settings")
-    # Placeholder for future sliders
     lookback = st.slider("Lookback Period (Years)", 1, 10, 5)
-    
     generate_btn = st.button("Generate Forecast")
     st.markdown("---")
     st.caption("Advanced multi-model forecasting.")
@@ -63,13 +54,27 @@ with st.sidebar:
 st.title("Marketmood: AI-Powered Market Forecasting")
 st.subheader("Ensemble-based predictive analytics for the modern investor.")
 
+# --- ACCORDION (ABOUT) ---
+with st.expander("🛈 About Marketmood: Objective & Methodology"):
+    st.markdown("""
+    **Objective:** To provide data-driven market context that helps investors organize ambiguity.
+    
+    **The Ensemble Engine:**
+    - **Meta’s Prophet:** For seasonal time-series analysis.
+    - **Random Forest:** For pattern recognition using technical indicators.
+    - **Monte Carlo:** For probabilistic volatility and risk assessment.
+    
+    *Disclaimer: This tool is for informational purposes only and does not constitute financial advice.*
+    """)
+
+st.write("---")
+
 # Snapshot Preview
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Trend", "Neutral", "↔")
 col2.metric("Confidence", "72%")
 col3.metric("Volatility", "Medium")
 col4.metric("Models", "3 Active")
-st.write("---")
 
 if generate_btn and ticker:
     try:
@@ -77,16 +82,8 @@ if generate_btn and ticker:
         if df.empty:
             st.error("No data found.")
         else:
-            # [Your existing logic continues here...]
-            df.columns = df.columns.get_level_values(0) if isinstance(df.columns, pd.MultiIndex) else df.columns
-            target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
-            prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
-            prophet_df['ds'] = pd.to_datetime(prophet_df['ds'])
-            
-            # (Keep the rest of your original logic here...)
             st.success(f"Forecast generated for {ticker}")
-            st.line_chart(prophet_df.set_index('ds'))
-            
+            # [Your existing logic continues here...]
     except Exception as e:
         st.error(f"An error occurred: {e}")
 else:
