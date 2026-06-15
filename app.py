@@ -11,6 +11,33 @@ from textblob import TextBlob
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
+st.markdown("""
+    <style>
+    /* Elegant font styling */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Smaller, more elegant headers */
+    h1 { font-size: 28px !important; font-weight: 600 !important; margin-bottom: 5px !important; }
+    h2 { font-size: 20px !important; font-weight: 400 !important; color: #4a4a4a !important; }
+    
+    /* Finance-style small caps or labels */
+    .stMetric label {
+        font-size: 12px !important;
+        font-weight: 400 !important;
+        color: #888888 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stMetric .css-1xarl3l { /* Adjusts value size */
+        font-size: 18px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Setup NLTK
 try:
     nltk.data.find('tokenizers/punkt')
