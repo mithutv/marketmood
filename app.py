@@ -41,8 +41,8 @@ st.markdown("""
 
     /* Targeting the Title specifically for an elegant, smaller look */
     h1 { 
-        font-size: 22px !important; 
-        font-weight: 400 !important; 
+        font-size: 36px !important; 
+        font-weight: 500 !important; 
         color: #333333 !important; 
         margin-bottom: 2px !important; 
         letter-spacing: -0.5px;
@@ -66,26 +66,21 @@ st.markdown("""
 
 # Header & Scope Note
 st.title("Marketmood: AI-Driven Financial Forecasting")
+st.caption("Status: System Operational | Engine: Ensemble (Prophet/RF/Monte Carlo) | Data: YFinance API")
 st.subheader("Ensemble-based predictive analytics for the modern investor.")
 st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
 # --- SCOPE NOTE / ABOUT SECTION ---
-with st.expander("🛈 About Marketmood: How it works & Disclaimer"):
+with st.expander("📖 Methodology Overview & Scope Note"):
     st.markdown("""
-    Marketmood is an ensemble-based financial forecasting suite designed to bridge the gap 
-    between complex machine learning and actionable market insights.
-
-    *   **Our Objective:** To provide data-driven market context that empowers you to make 
-        more informed investment decisions.
-    *   **The Ensemble Engine:** We synthesize three distinct AI methodologies—**Meta’s Prophet** 
-        for seasonality, **Random Forest** for pattern recognition, and **Monte Carlo** 
-        for risk assessment—to ensure no single model bias dominates our projections.
-    *   **Data Integrity:** We rely on verified historical market data from 2020 onward, 
-        prioritizing data quality to ensure our projections remain consistent and relevant 
-        to current market cycles.
-    *   **Your Responsibility:** Our forecasts are analytical tools, not financial advice. 
-        We encourage you to use these insights as a starting point for your own rigorous 
-        due diligence.
+    **Objective:** To provide a multi-model ensemble framework for distilling market complexity into actionable insights.
+    
+    **Scope & Model Integration:**
+    * **Trend Decomposition:** Meta Prophet model for seasonal time-series analysis.
+    * **Pattern Recognition:** Random Forest ensemble for non-linear technical signal detection.
+    * **Risk Assessment:** Monte Carlo simulations for probabilistic volatility forecasting.
+    
+    *Disclaimer: This terminal is for analytical research and educational purposes only.*
     """)
 
 
