@@ -218,6 +218,31 @@ if st.button("Generate Forecast") and ticker:
             fig_mc.update_layout(height=400, template="plotly_white")
             st.plotly_chart(fig_mc, use_container_width=True)
 
+            # --- NEW: BACKTESTING SECTION ---
+            st.divider()
+            st.subheader("Model Backtesting: How did we perform?")
+            
+            # Let the user pick a point in the past to test from
+            test_date = st.date_input("Select a start date for backtesting:", 
+                                     value=pd.Timestamp.now() - pd.Timedelta(days=180))
+            
+            if st.button("Run Historical Backtest"):
+                # Slice the data to "hide" the future from the model
+                backtest_df = prophet_df[prophet_df['ds'] <= pd.Timestamp(test_date)]
+                
+                # Re-run model on this limited dataset
+                m_backtest = Prophet().fit(backtest_df)
+                future = m_backtest.make_future_dataframe(periods=60)
+                forecast = m_backtest.predict(future)
+                
+                # Plotting the "Past Prediction" vs "Actual Reality"
+                fig_back = go.Figure()
+                fig_back.add_trace(go.Scatter(x=df.index, y=df['Close'], name='Actual Price'))
+                fig_back.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Backtested Forecast', line=dict(dash='dash')))
+                st.plotly_chart(fig_back, use_container_width=True)
+                
+                st.info("The dashed line represents what the model would have predicted if it were running on that date.")
+
             # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
             st.divider()
             st.header("AI Consensus Forecast")
