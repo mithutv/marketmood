@@ -41,9 +41,10 @@ st.markdown("""
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title("Marketmood")
+    st.header("Forecasting Engine")
+    st.info("Use the search tool to select an asset and initiate a multi-model ensemble synthesis.") # Uses a nice blue background box
     st.markdown("---")
-    ticker = st_searchbox(search_tickers, placeholder="Search ticker...", label="Target Asset", key="main_ticker_search")
+    ticker = st_searchbox(search_tickers, placeholder="Search ticker...", label="Search Stocks", key="main_ticker_search")
     st.markdown("### Model Settings")
     lookback = st.slider("Lookback Period (Years)", 1, 10, 5)
     generate_btn = st.button("Generate Forecast")
@@ -51,8 +52,8 @@ with st.sidebar:
     st.caption("Advanced multi-model forecasting.")
 
 # --- MAIN AREA ---
-st.title("Marketmood: AI-Powered Market Forecasting")
-st.subheader("Ensemble-based predictive analytics for the modern investor.")
+st.title("Marketmood: AI-Driven Financial Forecasting")
+st.subheader("Multi-model ensemble intelligence for data-driven market clarity")
 
 # --- ACCORDION (ABOUT) ---
 with st.expander("🛈 About Marketmood: Objective & Methodology"):
