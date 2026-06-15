@@ -53,7 +53,7 @@ st.markdown("""
 
 # Header & Scope Note
 st.title("Marketmood: AI-Driven Financial Forecasting")
-st.subheader("Ensemble-based predictive analytics for the modern investor.")
+st.subheader("Multi-model stock forecasting using Prophet, Random Forest, and Monte Carlo simulations with confidence scoring and backtesting")
 st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
 # --- SCOPE NOTE / ABOUT SECTION ---
@@ -74,6 +74,24 @@ with st.expander("🛈 About Marketmood: How it works & Disclaimer"):
         We encourage you to use these insights as a starting point for your own rigorous 
         due diligence.
     """)
+
+# --- MARKET SNAPSHOT PREVIEW ---
+st.subheader("Market Snapshot Preview")
+
+# Defining the columns for the KPI cards
+col1, col2, col3, col4 = st.columns(4)
+
+# KPI Metrics
+col1.metric("Trend", "Neutral", "↔")
+col2.metric("Confidence", "72%")
+col3.metric("Volatility", "Medium")
+col4.metric("Models", "3 Active")
+
+# Adding a small divider to separate the preview from the search bar
+st.write("---")
+
+# --- SEARCH BAR ---
+ticker = st_searchbox(search_tickers, placeholder="Enter symbol or company name (e.g., AAPL)...", label="Search market data...")
 
 
 def search_tickers(searchterm: str):
