@@ -41,7 +41,7 @@ st.markdown("""
 
     /* Targeting the Title specifically for an elegant, smaller look */
     h1 { 
-        font-size: 22px !important; 
+        font-size: 32px !important; 
         font-weight: 400 !important; 
         color: #333333 !important; 
         margin-bottom: 2px !important; 
