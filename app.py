@@ -71,16 +71,16 @@ st.subheader("Ensemble-based predictive analytics for the modern investor.")
 st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
 # --- SCOPE NOTE / ABOUT SECTION ---
-with st.expander(" Project overview & disclaimer"):
+with st.expander("📖 Methodology Overview & Scope Note"):
     st.markdown("""
-    **Objective:** To provide a multi-model ensemble framework for distilling market complexity into actionable insights.
+    ### Ensemble Approach
+    This application synthesizes three distinct mathematical models to triangulate potential market trends:
     
-    **Scope & Model Integration:**
-    * **Trend Decomposition:** Meta Prophet model for seasonal time-series analysis.
-    * **Pattern Recognition:** Random Forest ensemble for non-linear technical signal detection.
-    * **Risk Assessment:** Monte Carlo simulations for probabilistic volatility forecasting.
+    1. **Trend Analysis (Prophet):** Uses additive regression to decompose historical price data into seasonal and trend components.
+    2. **Pattern Recognition (Random Forest):** Employs non-linear machine learning to identify technical signal correlations.
+    3. **Risk Projection (Monte Carlo):** Calculates probabilistic outcomes based on 10,000 randomized simulations.
     
-    *Disclaimer: This terminal is for analytical research and educational purposes only.*
+    *Scope Note: This tool provides data-driven simulations, not financial advice.*
     """)
 
 
