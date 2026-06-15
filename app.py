@@ -11,14 +11,16 @@ from textblob import TextBlob
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
-# Setup
+# --- SETUP ---
 try: nltk.data.find('tokenizers/punkt')
 except LookupError: nltk.download('punkt')
 
+st.set_page_config(page_title="Marketmood Terminal", layout="wide")
+
+# --- FUNCTIONS ---
 @st.cache_data(ttl=3600)
 def search_tickers(searchterm: str):
     if not searchterm or len(searchterm) < 3: return []
-    time.sleep(0.2)
     try:
         results = yf.Search(searchterm).quotes
         return [(f"{q.get('shortname', '')} ({q.get('symbol', '')})", q.get('symbol', '')) for q in results if 'symbol' in q]
@@ -28,45 +30,52 @@ def search_tickers(searchterm: str):
 def get_stock_data(ticker): 
     return yf.download(ticker, period="10y", threads=False, multi_level_index=False)
 
-st.set_page_config(page_title="Marketmood", layout="wide")
-
-# Sidebar
+# --- SIDEBAR ---
 with st.sidebar:
     st.header("Forecasting Engine")
-    st.info("Use the search tool to select an asset and initiate a multi-model ensemble synthesis.")
+    st.info("Find an asset to initiate a multi-model ensemble synthesis.")
     st.markdown("---")
     ticker = st_searchbox(search_tickers, placeholder="e.g. AAPL or Apple...", label="Select Asset")
     st.markdown("### Model Settings")
     lookback = st.slider("Lookback Period (Years)", 1, 10, 5)
     generate_btn = st.button("Generate Forecast", use_container_width=True)
 
-# Main Area
+# --- MAIN AREA ---
 st.title("Marketmood: Financial Forecasting Terminal")
 
 if generate_btn and ticker:
-    with st.spinner("Synthesizing forecast..."):
+    with st.spinner(f"Running Ensemble Analysis for {ticker}..."):
+        # 1. DATA PREP
         df = get_stock_data(ticker)
-        df.columns = df.columns.get_level_values(0) if isinstance(df.columns, pd.MultiIndex) else df.columns
         target_col = 'Adj Close' if 'Adj Close' in df.columns else 'Close'
-        
-        # --- PROPHET LOGIC ---
         prophet_df = df.reset_index()[['Date', target_col]].rename(columns={'Date': 'ds', target_col: 'y'})
+        
+        # 2. MODELS
         m = Prophet(daily_seasonality=True).fit(prophet_df)
         forecast = m.predict(m.make_future_dataframe(periods=365))
         
-        # --- ML / RANDOM FOREST LOGIC ---
-        # Add your ML features and RandomForestRegressor fit code here...
-        
-        # --- MONTE CARLO LOGIC ---
-        # Add your Monte Carlo simulation code here...
-        
-        # --- DISPLAY RESULTS ---
-        st.subheader("Market Trend & Forecast")
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual'))
-        fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Forecast'))
-        st.plotly_chart(fig, use_container_width=True)
-        
-        st.success(f"Forecast complete for {ticker}")
+        # 3. TABS
+        tab1, tab2, tab3 = st.tabs(["📊 Forecasts", "🧠 ML Pattern Analysis", "📰 News & Sentiment"])
+
+        with tab1:
+            st.subheader("Market Trend & Forecast")
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual'))
+            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Forecast'))
+            st.plotly_chart(fig, use_container_width=True)
+
+        with tab2:
+            st.subheader("Random Forest Predictor")
+            # --- PASTE YOUR ML LOGIC HERE ---
+            st.write("ML Pattern analysis active.") 
+
+        with tab3:
+            st.subheader("Market Sentiment")
+            # --- PASTE YOUR NEWS/SENTIMENT LOGIC HERE ---
+            rss_url = f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}"
+            feed = feedparser.parse(rss_url)
+            for entry in feed.entries[:5]: 
+                st.markdown(f"• {entry.title}")
+
 else:
-    st.info("👈 Use the sidebar to search for an asset and generate your forecast.")
+    st.info("👈 Use the sidebar to select an asset and generate your forecast.")
