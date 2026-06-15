@@ -65,7 +65,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Header & Scope Note
-st.title("Marketmood: AI-Driven Financial Forecasting")
+st.title("Marketmood: AI-Powered Market Forecasting")
 st.subheader("Ensemble-based predictive analytics for the modern investor.")
 st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
