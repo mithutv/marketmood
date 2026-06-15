@@ -71,7 +71,7 @@ st.subheader("Ensemble-based predictive analytics for the modern investor.")
 st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
 # --- SCOPE NOTE / ABOUT SECTION ---
-with st.expander("📖 Methodology Overview & Scope Note"):
+with st.expander(" Project overview"):
     st.markdown("""
     ### Ensemble Approach
     This application synthesizes three distinct mathematical models to triangulate potential market trends:
