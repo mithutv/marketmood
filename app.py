@@ -70,31 +70,48 @@ st.subheader("Ensemble-based predictive analytics for the modern investor.")
 st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
 # --- SCOPE NOTE / ABOUT SECTION ---
-with st.expander("🛈 About Marketmood: How it works & Disclaimer"):
+with st.expander("🛈 About Marketmood"):
+    
+    st.markdown("### Summary")
     st.markdown("""
-    Marketmood is an ensemble-based financial forecasting suite designed to bridge the gap 
-    between complex machine learning and actionable market insights.
-
-    *   **Our Objective:** To provide data-driven market context that empowers you to make 
-        more informed investment decisions.
-    *   **The Ensemble Engine:** We synthesize three distinct AI methodologies—**Meta’s Prophet** 
-        for seasonality, **Random Forest** for pattern recognition, and **Monte Carlo** 
-        for risk assessment—to ensure no single model bias dominates our projections.
-    *   **Data Integrity:** We rely on verified historical market data from 2020 onward, 
-        prioritizing data quality to ensure our projections remain consistent and relevant 
-        to current market cycles.
-    *   **Your Responsibility:** Our forecasts are analytical tools, not financial advice. 
-        We encourage you to use these insights as a starting point for your own rigorous 
-        due diligence.
+    Marketmood is an ensemble-driven AI forecasting suite that transforms complex machine learning models into actionable market context for investors.
     """)
 
+    st.markdown("### Methodology")
+    st.markdown("""
+    Marketmood combines multiple AI models to generate robust forecasts:
+
+    - **Meta’s Prophet** → Captures seasonality and trend structure  
+    - **Random Forest** → Identifies nonlinear patterns in market behavior  
+    - **Monte Carlo Simulation** → Models uncertainty and risk distributions  
+
+    These models are aggregated into an ensemble system to reduce single-model bias and improve stability across different market conditions.
+
+    **Data Integrity:**  
+    We use verified historical market data from 2020 onward, emphasizing consistency and regime relevance in all projections.
+    """)
+
+    st.markdown("### Risk Disclosure")
+    st.markdown("""
+    Marketmood outputs are probabilistic forecasts, not guarantees.
+
+    - This tool does not provide financial advice  
+    - All projections are for informational and educational use only  
+    - Markets are inherently uncertain and past performance does not imply future results  
+
+    Use these insights as one input among broader independent research and due diligence.
+    """)
 
 def search_tickers(searchterm: str):
     if not searchterm: return []
     results = yf.Search(searchterm).quotes
     return [(f"{q.get('shortname', '')} ({q.get('symbol', '')})", q.get('symbol', '')) for q in results if 'symbol' in q]
 
-ticker = st_searchbox(search_tickers, placeholder="Enter symbol or company name (e.g., AAPL)...", label="Search market data...")
+ticker = st_searchbox(
+    search_tickers,
+    placeholder="AAPL, NVDA, TSLA...",
+    label="Search market data"
+)
 
 @st.cache_data(ttl=86400)
 def get_stock_data(ticker): 
