@@ -148,21 +148,10 @@ with st.expander(" Project overview"):
 
     st.markdown("""
 
-    ### Ensemble Approach
-
-    This application synthesizes three distinct mathematical models to triangulate potential market trends:
-
-    
-
-    1. **Trend Analysis (Prophet):** Uses additive regression to decompose historical price data into seasonal and trend components.
-
-    2. **Pattern Recognition (Random Forest):** Employs non-linear machine learning to identify technical signal correlations.
-
-    3. **Risk Projection (Monte Carlo):** Calculates probabilistic outcomes based on 10,000 randomized simulations.
-
-    
-
-    *Scope Note: This tool provides data-driven simulations, not financial advice.*
+    Our Objective: To deliver data-driven market context that supports more informed investment decisions.
+The Ensemble Engine: We combine three complementary AI methodologies—Meta’s Prophet for seasonality, Random Forest for pattern recognition, and Monte Carlo simulations for risk modeling—to reduce single-model bias and improve forecast robustness.
+Data Integrity: We use verified historical market data from 2020 onward, prioritizing data quality and consistency to better reflect current market regimes.
+Your Responsibility: These forecasts are analytical tools, not financial advice. Use them as a starting point for independent research and due diligence.
 
     """)
 
