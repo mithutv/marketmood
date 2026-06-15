@@ -71,7 +71,7 @@ st.subheader("Ensemble-based predictive analytics for the modern investor.")
 st.caption("Advanced multi-model forecasting powered by Prophet, Random Forest, and Monte Carlo simulations.")
 
 # --- SCOPE NOTE / ABOUT SECTION ---
-with st.expander("📖 Methodology Overview & Scope Note"):
+with st.expander(" Project overview & disclaimer"):
     st.markdown("""
     **Objective:** To provide a multi-model ensemble framework for distilling market complexity into actionable insights.
     
