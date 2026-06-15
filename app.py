@@ -218,30 +218,44 @@ if st.button("Generate Forecast") and ticker:
             fig_mc.update_layout(height=400, template="plotly_white")
             st.plotly_chart(fig_mc, use_container_width=True)
 
-            # --- NEW: BACKTESTING SECTION ---
+        # --- NEW: BACKTESTING SECTION ---
+                        # --- BACKTESTING SECTION ---
             st.divider()
             st.subheader("Model Backtesting: How did we perform?")
             
-            # Let the user pick a point in the past to test from
+            # 1. Initialize session state if it doesn't exist
+            if 'run_backtest' not in st.session_state:
+                st.session_state.run_backtest = False
+            
             test_date = st.date_input("Select a start date for backtesting:", 
                                      value=pd.Timestamp.now() - pd.Timedelta(days=180))
             
+            # 2. Trigger function
             if st.button("Run Historical Backtest"):
-                # Slice the data to "hide" the future from the model
-                backtest_df = prophet_df[prophet_df['ds'] <= pd.Timestamp(test_date)]
-                
-                # Re-run model on this limited dataset
-                m_backtest = Prophet().fit(backtest_df)
-                future = m_backtest.make_future_dataframe(periods=60)
-                forecast = m_backtest.predict(future)
-                
-                # Plotting the "Past Prediction" vs "Actual Reality"
-                fig_back = go.Figure()
-                fig_back.add_trace(go.Scatter(x=df.index, y=df['Close'], name='Actual Price'))
-                fig_back.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Backtested Forecast', line=dict(dash='dash')))
-                st.plotly_chart(fig_back, use_container_width=True)
-                
-                st.info("The dashed line represents what the model would have predicted if it were running on that date.")
+                st.session_state.run_backtest = True
+            
+            # 3. Execution logic
+            if st.session_state.run_backtest:
+                try:
+                    # We need the original df (raw data) here
+                    # Slice data to hide the future
+                    backtest_df = prophet_df[prophet_df['ds'] <= pd.Timestamp(test_date)]
+                    
+                    if len(backtest_df) < 30:
+                        st.warning("Not enough data before this date to train the model.")
+                    else:
+                        with st.spinner("Training historical model..."):
+                            m_backtest = Prophet().fit(backtest_df)
+                            future = m_backtest.make_future_dataframe(periods=60)
+                            forecast = m_backtest.predict(future)
+                            
+                            fig_back = go.Figure()
+                            fig_back.add_trace(go.Scatter(x=df.index, y=df['Close'], name='Actual Price'))
+                            fig_back.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='Backtested Forecast', line=dict(dash='dash')))
+                            st.plotly_chart(fig_back, use_container_width=True)
+                            st.info("The dashed line represents what the model would have predicted if it were running on that date.")
+                except Exception as e:
+                    st.error(f"Backtest error: {e}")
 
             # --- ROW 5: FINAL CONSENSUS & CONVICTION ---
             st.divider()
