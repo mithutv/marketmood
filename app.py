@@ -42,9 +42,17 @@ st.markdown("""
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("Forecasting Engine")
-    st.info("Use the search tool to select an asset and initiate a multi-model ensemble synthesis.") # Uses a nice blue background box
+    st.info("Find an asset by name or symbol to initiate a multi-model ensemble synthesis.")
     st.markdown("---")
-    ticker = st_searchbox(search_tickers, placeholder="Search ticker...", label="Search Stocks", key="main_ticker_search")
+
+    
+    # Updated label and placeholder for professional feel
+    ticker = st_searchbox(
+        search_tickers,
+        placeholder="e.g. AAPL or Apple...",
+        label="Select Asset",
+        key="main_ticker_search"
+    )
     st.markdown("### Model Settings")
     lookback = st.slider("Lookback Period (Years)", 1, 10, 5)
     generate_btn = st.button("Generate Forecast")
