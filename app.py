@@ -39,7 +39,7 @@ st.markdown("""
 st.title("Marketmood: AI-Driven Financial Forecasting")
 st.subheader("Ensemble-based predictive analytics for the modern investor.")
 
-with st.expander("📖 Methodology Overview"):
+with st.expander("Project Overview"):
     st.markdown("""
     1. **Trend Analysis (Prophet):** Decomposes historical price data into seasonal components.
     2. **Pattern Recognition (Random Forest):** Identifies non-linear technical signal correlations.
@@ -76,7 +76,7 @@ if st.button("Generate Forecast") and ticker:
             
             # 1. PROPHET CARD
             prophet_trend = "Bullish" if price_1y > current_price else "Bearish"
-            with st.expander(f"📊 Prophet Trend: :{'green' if prophet_trend=='Bullish' else 'red'}[{prophet_trend}]", expanded=True):
+            with st.expander(f" Prophet Trend: :{'green' if prophet_trend=='Bullish' else 'red'}[{prophet_trend}]", expanded=True):
                 st.metric("1-Year Target", f"${price_1y:,.2f}")
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(x=prophet_df['ds'], y=prophet_df['y'], name='Actual'))
@@ -84,18 +84,18 @@ if st.button("Generate Forecast") and ticker:
                 st.plotly_chart(fig, use_container_width=True)
 
             # 2. ML CARD
-            with st.expander("🧠 ML Pattern Predictor"):
+            with st.expander(" ML Pattern Predictor"):
                 # (Keep your existing ML logic here)
                 st.write("Pattern analysis complete.")
                 st.info("The model identifies technical signal correlations for the 1-year horizon.")
 
             # 3. MONTE CARLO CARD
-            with st.expander("🎲 Monte Carlo Risk Projection"):
+            with st.expander(" Monte Carlo Risk Projection"):
                 # (Keep your existing MC logic here)
                 st.write("10,000 randomized simulations executed.")
             
             # 4. SENTIMENT CARD
-            with st.expander("📰 Market Sentiment"):
+            with st.expander(" Market Sentiment"):
                 # (Keep your existing sentiment logic here)
                 st.write("Sentiment analysis from recent news headlines.")
 
