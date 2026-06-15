@@ -38,6 +38,19 @@ st.set_page_config(page_title="Marketmood", layout="centered")
 
 st.markdown("""
     <style>
+
+    /* Targeting the Title specifically for an elegant, smaller look */
+    h1 { 
+        font-size: 22px !important; 
+        font-weight: 400 !important; 
+        color: #333333 !important; 
+        margin-bottom: 2px !important; 
+        letter-spacing: -0.5px;
+    }
+    
+    /* Optional: Style the subtitle to be even smaller/muted */
+    .stApp > header { display: none; } /* Hides the default Streamlit header */
+    
     /* Targeting the Generate Forecast button */
     div.stButton > button:first-child {
         background-color: #007BFF !important; /* Force Blue */
